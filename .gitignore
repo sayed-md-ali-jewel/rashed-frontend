@@ -1,0 +1,57 @@
+# ==========================================
+# Frontend .gitignore (Next.js 14+ / React)
+# ==========================================
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js Build Output & Cache
+.next/
+out/
+build/
+dist/
+deploy/
+
+# Environment Variables & Secrets
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+!.env.*.example
+!.env.local.example
+!.env.production.example
+
+# Vercel / Turbopack
+.vercel/
+.turbo/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Testing
+coverage/
+*.lcov
+
+# OS & Editor Files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.swp
+*.swo
