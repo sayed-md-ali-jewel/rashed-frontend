@@ -21,7 +21,7 @@ jobs:
       FTP_PASSWORD: ${{ vars.FTP_PASSWORD || secrets.FTP_PASSWORD }}
       FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || secrets.FTP_PROTOCOL || 'ftp' }}
       FTP_PORT: ${{ vars.FTP_PORT || secrets.FTP_PORT || '21' }}
-      FTP_SERVER_DIR: ${{ vars.FTP_SERVER_DIR || secrets.FTP_SERVER_DIR || '/public_html/' }}
+      FTP_SERVER_DIR: ${{ vars.FTP_SERVER_DIR || secrets.FTP_SERVER_DIR || '/public_html/drrashed.bd/frontend/' }}
 
     steps:
       - name: Checkout code
