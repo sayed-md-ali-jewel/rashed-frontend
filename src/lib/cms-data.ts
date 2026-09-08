@@ -1,7 +1,13 @@
 import { gallery, doctor, schedules, testimonials, websiteSetting } from "./mock-data";
 import { connectMongo, hasMongoUri } from "./mongodb";
-import { AppointmentModel, DoctorModel, GalleryItemModel, ScheduleModel, TestimonialModel, WebsiteSettingModel } from "./models";
-import { getStrapiLandingPageData, getStrapiScheduleById, getStrapiScheduleBySlug, hasStrapiConfig } from "./strapi";
+import {
+  AppointmentModel,
+  DoctorModel,
+  GalleryItemModel,
+  ScheduleModel,
+  TestimonialModel,
+  WebsiteSettingModel
+} from "./models";
 import type { Doctor, GalleryItem, Hospital, Schedule, SEOFields, Testimonial, WebsiteSetting } from "./types";
 
 type MongoDocument = {
@@ -29,11 +35,13 @@ function asNumber(value: unknown, fallback = 0) {
 function asStringArray(value: unknown, fallback: string[] = []) {
   if (!Array.isArray(value)) return fallback;
 
-  const items = value.map((item) => {
-    if (typeof item === "string") return item;
-    const record = typeof item === "object" && item !== null ? item as Record<string, unknown> : {};
-    return asString(record.value, asString(record.label));
-  }).filter((item) => item.length > 0);
+  const items = value
+    .map((item) => {
+      if (typeof item === "string") return item;
+      const record = typeof item === "object" && item !== null ? (item as Record<string, unknown>) : {};
+      return asString(record.value, asString(record.label));
+    })
+    .filter((item) => item.length > 0);
 
   return items.length > 0 ? items : fallback;
 }
@@ -49,7 +57,7 @@ function documentId(item: MongoDocument) {
 }
 
 function mapSeo(value: unknown, fallback: SEOFields): SEOFields {
-  const seo = typeof value === "object" && value !== null ? value as Record<string, unknown> : {};
+  const seo = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
   return {
     seoTitle: asString(seo.seoTitle, fallback.seoTitle),
     metaDescription: asString(seo.metaDescription, fallback.metaDescription),
@@ -62,7 +70,7 @@ function mapSeo(value: unknown, fallback: SEOFields): SEOFields {
     twitterDescription: asString(seo.twitterDescription, fallback.twitterDescription),
     twitterImage: asString(seo.twitterImage, fallback.twitterImage),
     noIndex: typeof seo.noIndex === "boolean" ? seo.noIndex : fallback.noIndex,
-    schema: typeof seo.schema === "object" && seo.schema !== null ? seo.schema as Record<string, unknown> : fallback.schema
+    schema: typeof seo.schema === "object" && seo.schema !== null ? (seo.schema as Record<string, unknown>) : fallback.schema
   };
 }
 
@@ -81,26 +89,30 @@ function mapDoctor(item: MongoDocument | null): Doctor {
     certifications: asStringArray(item.certifications, doctor.certifications),
     hospitalAffiliations: asStringArray(item.hospitalAffiliations, doctor.hospitalAffiliations),
     contactInformation: asString(item.contactInformation, doctor.contactInformation),
-    socialLinks: typeof item.socialLinks === "object" && item.socialLinks !== null
-      ? item.socialLinks as Doctor["socialLinks"]
-      : doctor.socialLinks,
+    socialLinks:
+      typeof item.socialLinks === "object" && item.socialLinks !== null
+        ? (item.socialLinks as Doctor["socialLinks"])
+        : doctor.socialLinks,
     biography: asString(item.biography, doctor.biography),
     heroBadge: asString(item.heroBadge, doctor.heroBadge),
     heroIntro: asString(item.heroIntro, doctor.heroIntro),
     heroCareTitle: asString(item.heroCareTitle, doctor.heroCareTitle),
     heroCareDescription: asString(item.heroCareDescription, doctor.heroCareDescription),
-    heroStats: Array.isArray(item.heroStats) && item.heroStats.length > 0
-      ? item.heroStats.map((stat) => stat as { label: string; value: string })
-      : doctor.heroStats,
+    heroStats:
+      Array.isArray(item.heroStats) && item.heroStats.length > 0
+        ? item.heroStats.map((stat) => stat as { label: string; value: string })
+        : doctor.heroStats,
     aboutHeading: asString(item.aboutHeading, doctor.aboutHeading),
     aboutBio: asStringArray(item.aboutBio, doctor.aboutBio),
     aboutImageUrl: asString(item.aboutImageUrl, doctor.aboutImageUrl),
-    expertiseCards: Array.isArray(item.expertiseCards) && item.expertiseCards.length > 0
-      ? item.expertiseCards.map((card) => card as { title: string; items: string[] })
-      : doctor.expertiseCards,
-    medicalServices: Array.isArray(item.medicalServices) && item.medicalServices.length > 0
-      ? item.medicalServices.map((service) => service as { title: string; description: string; items: string[] })
-      : doctor.medicalServices,
+    expertiseCards:
+      Array.isArray(item.expertiseCards) && item.expertiseCards.length > 0
+        ? item.expertiseCards.map((card) => card as { title: string; items: string[] })
+        : doctor.expertiseCards,
+    medicalServices:
+      Array.isArray(item.medicalServices) && item.medicalServices.length > 0
+        ? item.medicalServices.map((service) => service as { title: string; description: string; items: string[] })
+        : doctor.medicalServices,
     consultationFee: asNumber(item.consultationFee, doctor.consultationFee),
     phone: asString(item.phone, doctor.phone),
     whatsapp: asString(item.whatsapp, doctor.whatsapp),
@@ -116,13 +128,14 @@ function mapDoctor(item: MongoDocument | null): Doctor {
 }
 
 function mapHospital(value: unknown): Hospital {
-  const item = typeof value === "object" && value !== null ? value as Record<string, unknown> : {};
+  const item = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
   const name = asString(item.name, "Clinic");
   const address = asString(item.address, "Address coming soon");
   const rawMapUrl = asString(item.mapUrl, asString(item.embeddedMapUrl, asString(item.googleMapsUrl)));
-  const mapUrl = rawMapUrl && rawMapUrl.includes("output=embed")
-    ? rawMapUrl
-    : `https://www.google.com/maps?q=${encodeURIComponent(address || name)}&output=embed`;
+  const mapUrl =
+    rawMapUrl && rawMapUrl.includes("output=embed")
+      ? rawMapUrl
+      : `https://www.google.com/maps?q=${encodeURIComponent(address || name)}&output=embed`;
 
   return {
     name,
@@ -143,7 +156,8 @@ function mapSchedule(item: MongoDocument, bookedSlots: string[] = []): Schedule 
   const title = asString(item.title, `${hospital.name} Consultation`);
   const startsAt = asDateString(item.startsAt);
   const endsAt = asDateString(item.endsAt, new Date(new Date(startsAt).getTime() + 3 * 60 * 60 * 1000).toISOString());
-  const maxAppointments = typeof item.maxAppointments === "number" && item.maxAppointments > 0 ? item.maxAppointments : undefined;
+  const maxAppointments =
+    typeof item.maxAppointments === "number" && item.maxAppointments > 0 ? item.maxAppointments : undefined;
 
   const fallbackSeo = {
     seoTitle: `${title || hospital.name} Appointment | ${doctor.name}`,
@@ -184,10 +198,14 @@ function mapGalleryItem(item: MongoDocument): GalleryItem {
 function mapWebsiteSetting(item: MongoDocument | null): WebsiteSetting {
   if (!item) return websiteSetting;
 
-  const content = typeof item.content === "object" && item.content !== null ? item.content as Record<string, unknown> : {};
+  const content = typeof item.content === "object" && item.content !== null ? (item.content as Record<string, unknown>) : {};
 
   return {
     siteName: asString(item.siteName, websiteSetting.siteName),
+    logo: asString(item.logo, websiteSetting.logo || ""),
+    logoDark: asString(item.logoDark, websiteSetting.logoDark || ""),
+    favicon: asString(item.favicon, websiteSetting.favicon || ""),
+    appleTouchIcon: asString(item.appleTouchIcon, websiteSetting.appleTouchIcon || ""),
     footerDescription: asString(item.footerDescription, websiteSetting.footerDescription),
     contactPhone: asString(item.contactPhone, websiteSetting.contactPhone),
     contactEmail: asString(item.contactEmail, websiteSetting.contactEmail),
@@ -197,10 +215,13 @@ function mapWebsiteSetting(item: MongoDocument | null): WebsiteSetting {
     xUrl: asString(item.xUrl, websiteSetting.xUrl),
     youtubeUrl: asString(item.youtubeUrl, websiteSetting.youtubeUrl),
     telegramUrl: asString(item.telegramUrl, websiteSetting.telegramUrl),
-    defaultSeo: mapSeo(item.defaultSeo, websiteSetting.defaultSeo ?? {
-      seoTitle: websiteSetting.siteName,
-      metaDescription: websiteSetting.footerDescription
-    }),
+    defaultSeo: mapSeo(
+      item.defaultSeo,
+      websiteSetting.defaultSeo ?? {
+        seoTitle: websiteSetting.siteName,
+        metaDescription: websiteSetting.footerDescription
+      }
+    ),
     content: Object.fromEntries(
       Object.entries(websiteSetting.content).map(([key, fallback]) => [key, asString(content[key], fallback)])
     ) as WebsiteSetting["content"]
@@ -209,12 +230,11 @@ function mapWebsiteSetting(item: MongoDocument | null): WebsiteSetting {
 
 async function getBookedSlots(scheduleIds: string[]) {
   const appointments = await AppointmentModel.find({
-    $or: [
-      { scheduleId: { $in: scheduleIds } },
-      { schedule: { $in: scheduleIds } }
-    ],
+    $or: [{ scheduleId: { $in: scheduleIds } }, { schedule: { $in: scheduleIds } }],
     status: { $ne: "cancelled" }
-  }).select("scheduleId schedule slotStart").lean<MongoDocument[]>();
+  })
+    .select("scheduleId schedule slotStart")
+    .lean<MongoDocument[]>();
 
   return appointments.reduce<Record<string, string[]>>((groups, item) => {
     const scheduleId = asString(item.scheduleId, asString(item.schedule));
@@ -238,21 +258,6 @@ export function isUpcomingSchedule(schedule?: { startsAt?: string; endsAt?: stri
 export async function getLandingPageData(): Promise<LandingPageData> {
   const upcomingFallbackSchedules = schedules.filter(isUpcomingSchedule);
 
-  if (hasStrapiConfig()) {
-    try {
-      const data = await getStrapiLandingPageData();
-      return {
-        doctor: data.doctor,
-        schedules: data.schedules,
-        testimonials: data.testimonials.length > 0 ? data.testimonials : testimonials,
-        gallery: data.gallery.length > 0 ? data.gallery : gallery,
-        websiteSetting: data.websiteSetting
-      };
-    } catch {
-      return { doctor, schedules: upcomingFallbackSchedules, testimonials, gallery, websiteSetting };
-    }
-  }
-
   if (!hasMongoUri()) {
     return { doctor, schedules: upcomingFallbackSchedules, testimonials, gallery, websiteSetting };
   }
@@ -262,9 +267,15 @@ export async function getLandingPageData(): Promise<LandingPageData> {
 
     const [doctorItem, scheduleItems, testimonialItems, galleryItems, websiteSettingItem] = await Promise.all([
       DoctorModel.findOne().sort({ updatedAt: -1 }).lean<MongoDocument | null>(),
-      ScheduleModel.find({ scheduleStatus: { $ne: "cancelled" } }).sort({ startsAt: 1 }).lean<MongoDocument[]>(),
-      TestimonialModel.find().sort({ createdAt: -1 }).lean<MongoDocument[]>(),
-      GalleryItemModel.find().sort({ createdAt: -1 }).lean<MongoDocument[]>(),
+      ScheduleModel.find({ scheduleStatus: { $ne: "cancelled" } })
+        .sort({ startsAt: 1 })
+        .lean<MongoDocument[]>(),
+      TestimonialModel.find({ active: { $ne: false } })
+        .sort({ createdAt: -1 })
+        .lean<MongoDocument[]>(),
+      GalleryItemModel.find({ active: { $ne: false } })
+        .sort({ createdAt: -1 })
+        .lean<MongoDocument[]>(),
       WebsiteSettingModel.findOne().sort({ updatedAt: -1 }).lean<MongoDocument | null>()
     ]);
 
@@ -284,14 +295,6 @@ export async function getLandingPageData(): Promise<LandingPageData> {
 }
 
 export async function getWebsiteSetting(): Promise<WebsiteSetting> {
-  if (hasStrapiConfig()) {
-    try {
-      return (await getStrapiLandingPageData()).websiteSetting;
-    } catch {
-      return websiteSetting;
-    }
-  }
-
   if (!hasMongoUri()) return websiteSetting;
 
   try {
@@ -305,14 +308,6 @@ export async function getWebsiteSetting(): Promise<WebsiteSetting> {
 
 export async function getScheduleBySlug(slug: string): Promise<Schedule | null> {
   const fallback = schedules.find((schedule) => schedule.slug === slug) ?? null;
-
-  if (hasStrapiConfig()) {
-    try {
-      return await getStrapiScheduleBySlug(slug) ?? fallback;
-    } catch {
-      return fallback;
-    }
-  }
 
   if (!hasMongoUri()) {
     return fallback;
@@ -334,14 +329,6 @@ export async function getScheduleBySlug(slug: string): Promise<Schedule | null> 
 
 export async function getScheduleById(scheduleId: string): Promise<Schedule | null> {
   const fallback = schedules.find((schedule) => schedule.id === scheduleId) ?? null;
-
-  if (hasStrapiConfig()) {
-    try {
-      return await getStrapiScheduleById(scheduleId) ?? fallback;
-    } catch {
-      return fallback;
-    }
-  }
 
   if (!hasMongoUri()) {
     return fallback;

@@ -1,47 +1,30 @@
-name: Build and Deploy Frontend to Webuzo
+name: Build and Deploy to Webuzo
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-    paths-ignore:
-      - "README.md"
-      - ".gitignore"
-      - "docs/**"
-
-concurrency:
-  group: deploy-frontend-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build-deploy:
-    name: Build & Deploy Next.js Frontend
     runs-on: ubuntu-22.04
 
     env:
-      # Frontend Application Environment
-      PORT: ${{ vars.PORT || '3000' }}
-      HOSTNAME: ${{ vars.HOSTNAME || '0.0.0.0' }}
       NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || secrets.NEXT_PUBLIC_SITE_URL }}
-      NEXT_PUBLIC_STRAPI_URL: ${{ vars.NEXT_PUBLIC_STRAPI_URL || secrets.NEXT_PUBLIC_STRAPI_URL }}
-      STRAPI_API_URL: ${{ vars.STRAPI_API_URL || secrets.STRAPI_API_URL }}
-      STRAPI_API_TOKEN: ${{ secrets.STRAPI_API_TOKEN || vars.STRAPI_API_TOKEN }}
-      MONGODB_URI: ${{ secrets.MONGODB_URI || vars.MONGODB_URI }}
-      REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET || vars.REVALIDATE_SECRET }}
+      MONGODB_URI: ${{ vars.MONGODB_URI || secrets.MONGODB_URI }}
+      REVALIDATE_SECRET: ${{ vars.REVALIDATE_SECRET || secrets.REVALIDATE_SECRET }}
       ADMIN_DEMO_USER: ${{ vars.ADMIN_DEMO_USER || secrets.ADMIN_DEMO_USER }}
-      ADMIN_DEMO_PIN: ${{ secrets.ADMIN_DEMO_PIN || vars.ADMIN_DEMO_PIN }}
-
-      # Webuzo FTP Connection
-      FTP_SERVER: ${{ secrets.FRONTEND_FTP_SERVER || vars.FRONTEND_FTP_SERVER || secrets.FTP_SERVER || vars.FTP_SERVER }}
-      FTP_USERNAME: ${{ secrets.FRONTEND_FTP_USERNAME || vars.FRONTEND_FTP_USERNAME || secrets.FTP_USERNAME || vars.FTP_USERNAME }}
-      FTP_PASSWORD: ${{ secrets.FRONTEND_FTP_PASSWORD || vars.FRONTEND_FTP_PASSWORD || secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
-      FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftp' }}
-      FTP_PORT: ${{ vars.FTP_PORT || '21' }}
-      FTP_SERVER_DIR: ${{ vars.FRONTEND_FTP_SERVER_DIR || 'public_html/drrashed.bd/frontend/' }}
+      ADMIN_DEMO_PIN: ${{ vars.ADMIN_DEMO_PIN || secrets.ADMIN_DEMO_PIN }}
+      FTP_SERVER: ${{ vars.FTP_SERVER || secrets.FTP_SERVER }}
+      FTP_USERNAME: ${{ vars.FTP_USERNAME || secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ vars.FTP_PASSWORD || secrets.FTP_PASSWORD }}
+      FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || secrets.FTP_PROTOCOL || 'ftp' }}
+      FTP_PORT: ${{ vars.FTP_PORT || secrets.FTP_PORT || '21' }}
+      FTP_SERVER_DIR: ${{ vars.FTP_SERVER_DIR || secrets.FTP_SERVER_DIR || '/public_html/' }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -49,14 +32,16 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: package-lock.json
 
-      - name: Validate deploy configuration
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Validate deploy variables
         run: |
           missing=0
           for name in FTP_SERVER FTP_USERNAME FTP_PASSWORD; do
             if [ -z "${!name}" ]; then
-              echo "::error::Missing GitHub secret/variable: $name"
+              echo "::error::Missing GitHub variable/secret: $name"
               missing=1
             fi
           done
@@ -65,9 +50,6 @@ jobs:
             missing=1
           fi
           exit "$missing"
-
-      - name: Install dependencies
-        run: npm ci --include=dev
 
       - name: Build Next.js
         run: npm run build
@@ -84,31 +66,38 @@ jobs:
             cp -r .next/standalone/. deploy/
           fi
 
-          # Copy required static assets and public directory for standalone runtime
+          # Copy static files and public directory
           mkdir -p deploy/.next
           cp -r .next/static deploy/.next/static
+          mkdir -p deploy/_next
+          cp -r .next/static deploy/_next/static
           if [ -d public ]; then
             cp -r public deploy/public
           fi
 
-          # Ensure server entry points (both server.js and app.js for Webuzo/Passenger)
-          if [ -f deploy/server.js ]; then
-            cp deploy/server.js deploy/app.js
-          fi
+          # Clean up local environment and git traces
+          rm -rf deploy/.git deploy/.github deploy/.env.local deploy/.env.example
 
           # Passenger / Webuzo restart signal
           mkdir -p deploy/tmp
           echo "restarted at $(date -u +%Y-%m-%dT%H:%M:%SZ) - ${GITHUB_SHA}" > deploy/tmp/restart.txt
 
+          # Configure server binding and app.js for Webuzo/Passenger
+          if [ -f deploy/server.js ]; then
+            node -e "const fs=require('fs');const p='deploy/server.js';let s=fs.readFileSync(p,'utf8');s=s.replace(\"process.env.HOSTNAME || '0.0.0.0'\", \"process.env.HOSTNAME || '127.0.0.1'\");fs.writeFileSync(p,s);"
+            cp deploy/server.js deploy/app.js
+          fi
+
+          if [ -f deploy/package.json ]; then
+            node -e "const fs=require('fs');const p='deploy/package.json';const pkg=JSON.parse(fs.readFileSync(p,'utf8'));pkg.scripts={start:'node server.js'};pkg.main='server.js';pkg.engines={node:'20.x'};fs.writeFileSync(p, JSON.stringify(pkg,null,2)+'\n');"
+          fi
+
           # Write production environment files
           {
             echo "NODE_ENV=production"
-            echo "PORT=${PORT}"
-            echo "HOSTNAME=${HOSTNAME}"
+            echo "HOSTNAME=127.0.0.1"
+            echo "PORT=3000"
             echo "NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}"
-            echo "NEXT_PUBLIC_STRAPI_URL=${NEXT_PUBLIC_STRAPI_URL}"
-            echo "STRAPI_API_URL=${STRAPI_API_URL}"
-            echo "STRAPI_API_TOKEN=${STRAPI_API_TOKEN}"
             echo "MONGODB_URI=${MONGODB_URI}"
             echo "REVALIDATE_SECRET=${REVALIDATE_SECRET}"
             echo "ADMIN_DEMO_USER=${ADMIN_DEMO_USER}"

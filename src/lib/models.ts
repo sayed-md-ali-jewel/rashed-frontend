@@ -2,103 +2,131 @@ import { Schema, model, models } from "mongoose";
 
 const objectId = Schema.Types.ObjectId;
 
-const SeoSchema = new Schema(
+// 1. Shared Subschemas
+export const SeoSchema = new Schema(
   {
-    seoTitle: String,
-    metaDescription: String,
-    focusKeyword: String,
-    canonicalUrl: String,
-    ogTitle: String,
-    ogDescription: String,
-    ogImage: String,
-    twitterTitle: String,
-    twitterDescription: String,
-    twitterImage: String,
-    noIndex: Boolean,
-    schema: Schema.Types.Mixed
+    seoTitle: { type: String, default: "" },
+    metaTitle: { type: String, default: "" },
+    metaDescription: { type: String, default: "" },
+    focusKeyword: { type: String, default: "" },
+    keywords: { type: String, default: "" },
+    canonicalUrl: { type: String, default: "" },
+    ogTitle: { type: String, default: "" },
+    ogDescription: { type: String, default: "" },
+    ogImage: { type: String, default: "" },
+    twitterTitle: { type: String, default: "" },
+    twitterDescription: { type: String, default: "" },
+    twitterImage: { type: String, default: "" },
+    robots: { type: String, default: "index, follow" },
+    noIndex: { type: Boolean, default: false },
+    schema: { type: Schema.Types.Mixed, default: null }
+  },
+  { _id: false, strict: false }
+);
+
+export const EmbeddedHospitalSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    address: { type: String, required: true },
+    phone: { type: String, default: "" },
+    googleMapsUrl: { type: String, default: "" },
+    embeddedMapUrl: { type: String, default: "" },
+    mapUrl: { type: String, default: "" },
+    latitude: { type: Number, default: 23.8103 },
+    longitude: { type: Number, default: 90.4125 },
+    image: { type: String, default: "" },
+    consultationFee: { type: Number, default: 0 },
+    active: { type: Boolean, default: true }
   },
   { _id: false }
 );
 
+// 2. Admin User Model (Authentication & Roles)
+const AdminUserSchema = new Schema(
+  {
+    username: { type: String, required: true, unique: true, index: true },
+    email: { type: String, index: true },
+    pin: { type: String, default: "123456" },
+    passwordHash: { type: String, select: false },
+    name: { type: String, default: "Super Admin" },
+    role: {
+      type: String,
+      enum: ["super_admin", "admin", "doctor", "staff"],
+      default: "super_admin"
+    },
+    permissions: [{ type: String }],
+    avatar: { type: String, default: "" },
+    active: { type: Boolean, default: true },
+    lastLogin: { type: Date }
+  },
+  { timestamps: true }
+);
+
+// 3. Hospital Model
 const HospitalSchema = new Schema(
   {
-    name: { type: String, required: true },
+    name: { type: String, required: true, index: true },
     address: { type: String, required: true },
-    phone: String,
-    googleMapsUrl: String,
-    embeddedMapUrl: String,
-    mapUrl: String,
-    latitude: Number,
-    longitude: Number,
-    image: String,
-    consultationFee: Number,
+    phone: { type: String, default: "" },
+    googleMapsUrl: { type: String, default: "" },
+    embeddedMapUrl: { type: String, default: "" },
+    mapUrl: { type: String, default: "" },
+    latitude: { type: Number, default: 23.8103 },
+    longitude: { type: Number, default: 90.4125 },
+    image: { type: String, default: "" },
+    consultationFee: { type: Number, default: 1000 },
     active: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
 
-const EmbeddedHospitalSchema = new Schema(
-  {
-    name: { type: String, required: true },
-    address: { type: String, required: true },
-    phone: String,
-    googleMapsUrl: String,
-    embeddedMapUrl: String,
-    mapUrl: String,
-    latitude: Number,
-    longitude: Number,
-    image: String,
-    consultationFee: Number,
-    active: Boolean
-  },
-  { _id: false }
-);
-
+// 4. Doctor Profile Model (Single Type)
 const DoctorSchema = new Schema(
   {
-    name: { type: String, required: true },
-    title: String,
-    designation: String,
-    specialization: String,
-    medicalRegistrationNumber: String,
-    yearsOfExperience: Number,
-    onlineConsultationFee: Number,
-    languages: [String],
-    certifications: [String],
-    hospitalAffiliations: [String],
-    contactInformation: String,
+    name: { type: String, required: true, default: "Dr. Md. Rashedul Alam" },
+    title: { type: String, default: "Consultant Medicine Specialist" },
+    designation: { type: String, default: "Senior Consultant" },
+    specialization: { type: String, default: "Internal Medicine" },
+    medicalRegistrationNumber: { type: String, default: "BMDC A-123456" },
+    yearsOfExperience: { type: Number, default: 15 },
+    onlineConsultationFee: { type: Number, default: 800 },
+    languages: [{ type: String }],
+    certifications: [{ type: String }],
+    hospitalAffiliations: [{ type: String }],
+    contactInformation: { type: String, default: "" },
     socialLinks: {
-      facebook: String,
-      linkedin: String,
-      x: String,
-      youtube: String
+      facebook: { type: String, default: "" },
+      linkedin: { type: String, default: "" },
+      x: { type: String, default: "" },
+      youtube: { type: String, default: "" }
     },
-    biography: String,
-    heroBadge: String,
-    heroIntro: String,
-    heroCareTitle: String,
-    heroCareDescription: String,
+    biography: { type: String, default: "" },
+    heroBadge: { type: String, default: "Board Certified Physician" },
+    heroIntro: { type: String, default: "" },
+    heroCareTitle: { type: String, default: "Patient-Centered Care" },
+    heroCareDescription: { type: String, default: "" },
     heroStats: [{ label: String, value: String }],
-    aboutHeading: String,
-    aboutBio: [String],
-    aboutImageUrl: String,
+    aboutHeading: { type: String, default: "A Personal Approach to Medicine" },
+    aboutBio: [{ type: String }],
+    aboutImageUrl: { type: String, default: "" },
     expertiseCards: [{ title: String, items: [String] }],
     medicalServices: [{ title: String, description: String, items: [String] }],
-    consultationFee: Number,
-    phone: String,
-    whatsapp: String,
-    address: String,
-    image: String,
-    qualifications: [String],
-    specialisations: [String],
-    experience: [String],
-    awards: [String],
-    services: [String],
-    seo: SeoSchema
+    consultationFee: { type: Number, default: 1000 },
+    phone: { type: String, default: "+8801700000000" },
+    whatsapp: { type: String, default: "+8801700000000" },
+    address: { type: String, default: "Dhaka, Bangladesh" },
+    image: { type: String, default: "" },
+    qualifications: [{ type: String }],
+    specialisations: [{ type: String }],
+    experience: [{ type: String }],
+    awards: [{ type: String }],
+    services: [{ type: String }],
+    seo: { type: Schema.Types.Mixed, default: () => ({}) }
   },
   { timestamps: true }
 );
 
+// 5. Schedule Model
 const ScheduleSchema = new Schema(
   {
     title: { type: String, required: true },
@@ -108,74 +136,83 @@ const ScheduleSchema = new Schema(
     startsAt: { type: Date, required: true, index: true },
     endsAt: { type: Date, required: true },
     slotDurationMinutes: { type: Number, required: true, default: 10 },
-    fee: { type: Number, required: true, default: 0 },
-    maxAppointments: Number,
-    breakStart: Date,
-    breakEnd: Date,
+    fee: { type: Number, required: true, default: 1000 },
+    maxAppointments: { type: Number, default: 20 },
+    breakStart: { type: Date },
+    breakEnd: { type: Date },
     scheduleStatus: {
       type: String,
       enum: ["scheduled", "cancelled", "completed"],
       default: "scheduled"
     },
-    seo: SeoSchema
+    seo: { type: SeoSchema, default: () => ({}) }
   },
   { timestamps: true }
 );
 
+// 6. Testimonial Model
 const TestimonialSchema = new Schema(
   {
     name: { type: String, required: true },
     quote: { type: String, required: true },
-    rating: { type: Number, required: true, default: 5 }
+    rating: { type: Number, required: true, default: 5, min: 1, max: 5 },
+    designation: { type: String, default: "Verified Patient" },
+    avatar: { type: String, default: "" },
+    active: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
 
+// 7. Gallery Item Model
 const GalleryItemSchema = new Schema(
   {
     title: { type: String, required: true },
     image: { type: String, required: true },
-    alt: String,
-    altText: String
+    alt: { type: String, default: "" },
+    altText: { type: String, default: "" },
+    category: { type: String, default: "clinic" },
+    active: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
 
+// 8. Patient Model
 const PatientSchema = new Schema(
   {
     fullName: { type: String, required: true },
     mobileNumber: { type: String, required: true, unique: true, index: true },
-    email: String,
-    dateOfBirth: Date,
-    age: Number,
+    email: { type: String, default: "" },
+    dateOfBirth: { type: Date },
+    age: { type: Number },
     gender: {
       type: String,
       enum: ["female", "male", "other", "prefer_not_to_say", ""],
       default: ""
     },
-    address: String,
-    emergencyContact: String,
-    medicalHistory: String,
+    address: { type: String, default: "" },
+    emergencyContact: { type: String, default: "" },
+    medicalHistory: { type: String, default: "" },
     jwtSubject: { type: String, select: false }
   },
   { timestamps: true }
 );
 
+// 9. Appointment Model
 const AppointmentSchema = new Schema(
   {
     patientId: { type: objectId, ref: "Patient", index: true },
     patientName: { type: String, required: true },
     mobileNumber: { type: String, required: true, index: true },
-    email: String,
-    dateOfBirth: Date,
-    age: Number,
-    gender: String,
-    address: String,
-    emergencyContact: String,
-    medicalHistory: String,
-    reason: String,
-    uploadedReports: [String],
-    hospitalName: String,
+    email: { type: String, default: "" },
+    dateOfBirth: { type: Date },
+    age: { type: Number },
+    gender: { type: String, default: "" },
+    address: { type: String, default: "" },
+    emergencyContact: { type: String, default: "" },
+    medicalHistory: { type: String, default: "" },
+    reason: { type: String, default: "" },
+    uploadedReports: [{ type: String }],
+    hospitalName: { type: String, default: "" },
     scheduleObjectId: { type: objectId, ref: "Schedule", index: true },
     scheduleId: { type: String, required: true, index: true },
     slotStart: { type: Date, required: true },
@@ -183,66 +220,89 @@ const AppointmentSchema = new Schema(
     queueNumber: { type: Number, required: true },
     status: {
       type: String,
-      enum: ["pending", "approved", "cancelled"],
+      enum: ["pending", "approved", "cancelled", "completed"],
+      default: "pending",
+      index: true
+    },
+    appointmentStatus: {
+      type: String,
+      enum: ["pending", "approved", "cancelled", "completed"],
       default: "pending"
     },
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "failed", "refunded", "unpaid", "partial"],
-      default: "pending"
+      default: "pending",
+      index: true
     },
     paymentAmount: { type: Number, default: 0 },
-    patientMessage: String,
-    patientMessageSentAt: Date,
-    notes: String
+    patientMessage: { type: String, default: "" },
+    patientMessageSentAt: { type: Date },
+    notes: { type: String, default: "" }
   },
   { timestamps: true }
 );
 
-AppointmentSchema.index({ scheduleId: 1, slotStart: 1 }, { unique: true });
+// Compound index for schedule slot unique booking
+AppointmentSchema.index(
+  { scheduleId: 1, slotStart: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: { $ne: "cancelled" } }
+  }
+);
 
+// 10. Qualification Model
 const QualificationSchema = new Schema(
   {
     title: { type: String, required: true },
-    institution: String,
-    year: Number
+    institution: { type: String, default: "" },
+    year: { type: Number },
+    degree: { type: String, default: "" }
   },
   { timestamps: true }
 );
 
+// 11. Specialisation Model
 const SpecialisationSchema = new Schema(
   {
     name: { type: String, required: true },
-    description: String
+    description: { type: String, default: "" },
+    icon: { type: String, default: "" }
   },
   { timestamps: true }
 );
 
+// 12. Award Model
 const AwardSchema = new Schema(
   {
     title: { type: String, required: true },
-    year: Number,
-    description: String
+    year: { type: Number },
+    organisation: { type: String, default: "" },
+    description: { type: String, default: "" }
   },
   { timestamps: true }
 );
 
+// 13. Service Model
 const ServiceSchema = new Schema(
   {
     name: { type: String, required: true },
-    description: String,
-    fee: Number,
-    image: String,
-    icon: String,
-    active: { type: Boolean, default: true }
+    description: { type: String, default: "" },
+    fee: { type: Number, default: 0 },
+    image: { type: String, default: "" },
+    icon: { type: String, default: "" },
+    active: { type: Boolean, default: true },
+    order: { type: Number, default: 0 }
   },
   { timestamps: true }
 );
 
+// 14. Hospital Schedule Pattern Model
 const HospitalScheduleSchema = new Schema(
   {
     hospitalId: { type: objectId, ref: "Hospital", required: true, index: true },
-    hospitalName: String,
+    hospitalName: { type: String, default: "" },
     dayOfWeek: {
       type: String,
       enum: ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
@@ -251,44 +311,55 @@ const HospitalScheduleSchema = new Schema(
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
     appointmentDurationMinutes: { type: Number, default: 15 },
-    breakStartTime: String,
-    breakEndTime: String,
-    maxAppointments: Number,
+    breakStartTime: { type: String, default: "" },
+    breakEndTime: { type: String, default: "" },
+    maxAppointments: { type: Number, default: 20 },
     recurringWeekly: { type: Boolean, default: true },
     active: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
 
+// 15. Schedule Exception Model
 const ScheduleExceptionSchema = new Schema(
   {
     hospitalId: { type: objectId, ref: "Hospital", index: true },
-    hospitalName: String,
+    hospitalName: { type: String, default: "" },
     date: { type: Date, required: true, index: true },
     type: {
       type: String,
       enum: ["unavailable", "holiday", "temporary_change"],
       default: "unavailable"
     },
-    startTime: String,
-    endTime: String,
-    appointmentDurationMinutes: Number,
-    reason: String
+    startTime: { type: String, default: "" },
+    endTime: { type: String, default: "" },
+    appointmentDurationMinutes: { type: Number },
+    reason: { type: String, default: "" }
   },
   { timestamps: true }
 );
 
+// 16. Prescription Model
 const PrescriptionSchema = new Schema(
   {
     patientId: { type: objectId, ref: "Patient", index: true },
     appointmentId: { type: objectId, ref: "Appointment", index: true },
-    medicines: [{ name: String, dose: String, frequency: String, duration: String, instructions: String }],
-    advice: String,
-    followUpDate: Date
+    medicines: [
+      {
+        name: { type: String, required: true },
+        dose: { type: String, default: "" },
+        frequency: { type: String, default: "" },
+        duration: { type: String, default: "" },
+        instructions: { type: String, default: "" }
+      }
+    ],
+    advice: { type: String, default: "" },
+    followUpDate: { type: Date }
   },
   { timestamps: true }
 );
 
+// 17. Medical Report Model
 const MedicalReportSchema = new Schema(
   {
     patientId: { type: objectId, ref: "Patient", index: true },
@@ -300,33 +371,35 @@ const MedicalReportSchema = new Schema(
       enum: ["admin", "doctor", "patient"],
       default: "patient"
     },
-    notes: String
+    notes: { type: String, default: "" }
   },
   { timestamps: true }
 );
 
+// 18. Medical Record Model
 const MedicalRecordSchema = new Schema(
   {
     patientId: { type: objectId, ref: "Patient", required: true, index: true },
     appointmentId: { type: objectId, ref: "Appointment", index: true },
-    hospitalName: String,
+    hospitalName: { type: String, default: "" },
     visitDate: { type: Date, required: true },
-    symptoms: String,
-    diagnosis: String,
-    prescription: String,
-    doctorNotes: String,
-    followUpDate: Date,
-    reportUrls: [String]
+    symptoms: { type: String, default: "" },
+    diagnosis: { type: String, default: "" },
+    prescription: { type: String, default: "" },
+    doctorNotes: { type: String, default: "" },
+    followUpDate: { type: Date },
+    reportUrls: [{ type: String }]
   },
   { timestamps: true }
 );
 
+// 19. Payment Model
 const PaymentSchema = new Schema(
   {
     appointmentId: { type: objectId, ref: "Appointment", index: true },
     patientId: { type: objectId, ref: "Patient", index: true },
-    patientName: String,
-    hospitalName: String,
+    patientName: { type: String, default: "" },
+    hospitalName: { type: String, default: "" },
     consultationFee: { type: Number, required: true, default: 0 },
     discount: { type: Number, default: 0 },
     totalAmount: { type: Number, required: true, default: 0 },
@@ -335,26 +408,28 @@ const PaymentSchema = new Schema(
       enum: ["cash", "card", "bkash", "nagad", "bank", "online", "other"],
       default: "cash"
     },
-    transactionId: String,
-    paymentDate: Date,
+    transactionId: { type: String, default: "" },
+    paymentDate: { type: Date, default: Date.now },
     status: {
       type: String,
       enum: ["pending", "paid", "failed", "refunded"],
-      default: "pending"
+      default: "pending",
+      index: true
     }
   },
   { timestamps: true }
 );
 
+// 20. Invoice Model
 const InvoiceSchema = new Schema(
   {
     paymentId: { type: objectId, ref: "Payment", index: true },
     appointmentId: { type: objectId, ref: "Appointment", index: true },
     invoiceNumber: { type: String, required: true, unique: true, index: true },
     issuedAt: { type: Date, default: Date.now },
-    subtotal: Number,
-    discount: Number,
-    total: Number,
+    subtotal: { type: Number, default: 0 },
+    discount: { type: Number, default: 0 },
+    total: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ["draft", "issued", "paid", "void"],
@@ -364,12 +439,14 @@ const InvoiceSchema = new Schema(
   { timestamps: true }
 );
 
+// 21. Notification Model
 const NotificationSchema = new Schema(
   {
     recipientType: {
       type: String,
       enum: ["admin", "doctor", "patient"],
-      required: true
+      required: true,
+      index: true
     },
     patientId: { type: objectId, ref: "Patient", index: true },
     appointmentId: { type: objectId, ref: "Appointment", index: true },
@@ -392,73 +469,84 @@ const NotificationSchema = new Schema(
       ],
       required: true
     },
-    title: String,
-    message: String,
-    readAt: Date,
-    sentAt: Date
+    title: { type: String, default: "" },
+    message: { type: String, default: "" },
+    readAt: { type: Date },
+    sentAt: { type: Date, default: Date.now }
   },
   { timestamps: true }
 );
 
+// 22. Page Model
 const PageSchema = new Schema(
   {
     title: { type: String, required: true },
     slug: { type: String, required: true, unique: true, index: true },
-    content: String,
+    content: { type: String, default: "" },
     published: { type: Boolean, default: false },
-    seoTitle: String,
-    metaDescription: String,
-    ogImage: String
+    seoTitle: { type: String, default: "" },
+    metaDescription: { type: String, default: "" },
+    ogImage: { type: String, default: "" }
   },
   { timestamps: true }
 );
 
+// 23. Page Section Model
 const PageSectionSchema = new Schema(
   {
     pageSlug: { type: String, required: true, index: true },
     sectionKey: { type: String, required: true },
-    title: String,
-    description: String,
-    image: String,
-    icon: String,
-    items: Schema.Types.Mixed,
+    title: { type: String, default: "" },
+    description: { type: String, default: "" },
+    image: { type: String, default: "" },
+    icon: { type: String, default: "" },
+    items: { type: Schema.Types.Mixed, default: null },
     order: { type: Number, default: 0 },
     published: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
 
+// 24. Media Model
 const MediaSchema = new Schema(
   {
     title: { type: String, required: true },
     url: { type: String, required: true },
-    alt: String,
-    mimeType: String,
-    sizeBytes: Number
+    alt: { type: String, default: "" },
+    mimeType: { type: String, default: "image/jpeg" },
+    sizeBytes: { type: Number, default: 0 },
+    width: { type: Number },
+    height: { type: Number },
+    folder: { type: String, default: "uploads" },
+    tags: [{ type: String }]
   },
   { timestamps: true }
 );
 
+// 25. Audit Log Model
 const AuditLogSchema = new Schema(
   {
     actorRole: {
       type: String,
-      enum: ["admin", "doctor", "patient", "system"],
+      enum: ["super_admin", "admin", "doctor", "patient", "system"],
       default: "system"
     },
+    actorName: { type: String, default: "System" },
     action: { type: String, required: true },
-    entity: String,
-    entityId: String,
-    metadata: Schema.Types.Mixed
+    entity: { type: String, default: "" },
+    entityId: { type: String, default: "" },
+    metadata: { type: Schema.Types.Mixed, default: null },
+    ipAddress: { type: String, default: "" }
   },
   { timestamps: true }
 );
 
+// 26. Income Model
 const IncomeSchema = new Schema(
   {
     title: { type: String, required: true },
     amount: { type: Number, required: true },
-    incomeDate: { type: Date, required: true },
+    incomeDate: { type: Date, required: true, default: Date.now },
     category: {
       type: String,
       enum: ["consultation", "procedure", "other"],
@@ -469,49 +557,63 @@ const IncomeSchema = new Schema(
       type: String,
       enum: ["cash", "card", "bkash", "nagad", "bank", "other"],
       default: "cash"
-    }
+    },
+    notes: { type: String, default: "" }
   },
   { timestamps: true }
 );
 
+// 27. Expense Model
 const ExpenseSchema = new Schema(
   {
     title: { type: String, required: true },
     amount: { type: Number, required: true },
-    expenseDate: { type: Date, required: true },
+    expenseDate: { type: Date, required: true, default: Date.now },
     category: {
       type: String,
       enum: ["rent", "salary", "utility", "equipment", "medicine", "marketing", "other"],
       default: "other"
     },
-    receipt: String,
-    notes: String
+    receipt: { type: String, default: "" },
+    notes: { type: String, default: "" }
   },
   { timestamps: true }
 );
 
+// 28. Blog Post Model
 const BlogPostSchema = new Schema(
   {
     title: { type: String, required: true },
     slug: { type: String, required: true, unique: true, index: true },
-    excerpt: String,
+    excerpt: { type: String, default: "" },
     content: { type: String, required: true },
-    coverImage: String,
-    seo: SeoSchema,
-    publishedAt: Date
+    coverImage: { type: String, default: "" },
+    author: { type: String, default: "Dr. Md. Rashedul Alam" },
+    tags: [{ type: String }],
+    status: {
+      type: String,
+      enum: ["draft", "published"],
+      default: "published"
+    },
+    seo: { type: SeoSchema, default: () => ({}) },
+    publishedAt: { type: Date, default: Date.now }
   },
   { timestamps: true }
 );
 
+// 29. FAQ Model
 const FaqSchema = new Schema(
   {
     question: { type: String, required: true },
     answer: { type: String, required: true },
-    order: { type: Number, default: 0 }
+    category: { type: String, default: "general" },
+    order: { type: Number, default: 0 },
+    active: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
 
+// 30. Redirect Model
 const RedirectSchema = new Schema(
   {
     fromPath: { type: String, required: true, unique: true, index: true },
@@ -526,54 +628,68 @@ const RedirectSchema = new Schema(
   { timestamps: true }
 );
 
+// 31. SEO Setting Model
 const SeoSettingSchema = new Schema(
   {
-    seoTitle: { type: String, required: true, maxlength: 65 },
-    metaDescription: { type: String, required: true, maxlength: 160 },
-    focusKeyword: String,
-    canonicalUrl: String,
-    slug: { type: String, index: true },
-    openGraphTitle: String,
-    openGraphDescription: String,
-    openGraphImage: String,
-    twitterTitle: String,
-    twitterDescription: String,
-    twitterImage: String,
-    jsonLdSchema: Schema.Types.Mixed,
-    breadcrumbs: Schema.Types.Mixed,
+    seoTitle: { type: String, required: true, maxlength: 70 },
+    metaDescription: { type: String, required: true, maxlength: 170 },
+    focusKeyword: { type: String, default: "" },
+    canonicalUrl: { type: String, default: "" },
+    slug: { type: String, index: true, default: "" },
+    openGraphTitle: { type: String, default: "" },
+    openGraphDescription: { type: String, default: "" },
+    openGraphImage: { type: String, default: "" },
+    twitterTitle: { type: String, default: "" },
+    twitterDescription: { type: String, default: "" },
+    twitterImage: { type: String, default: "" },
+    jsonLdSchema: { type: Schema.Types.Mixed, default: null },
+    breadcrumbs: { type: Schema.Types.Mixed, default: null },
     indexing: {
       type: String,
       enum: ["index", "noindex"],
       default: "index"
     },
-    imageAltText: String,
-    seoScore: { type: Number, min: 0, max: 100 },
-    readabilityScore: { type: Number, min: 0, max: 100 },
-    socialPreviewNotes: String
+    imageAltText: { type: String, default: "" },
+    seoScore: { type: Number, min: 0, max: 100, default: 85 },
+    readabilityScore: { type: Number, min: 0, max: 100, default: 90 },
+    socialPreviewNotes: { type: String, default: "" }
   },
   { timestamps: true }
 );
 
+// 32. Website Setting Model (Single Type)
 const WebsiteSettingSchema = new Schema(
   {
-    siteName: { type: String, required: true },
-    defaultSeo: SeoSchema,
-    facebookUrl: String,
-    linkedinUrl: String,
-    xUrl: String,
-    youtubeUrl: String,
-    telegramUrl: String,
-    contactPhone: String,
-    contactEmail: String,
-    contactAddress: String,
-    footerDescription: String,
-    content: Schema.Types.Mixed,
-    googleMapsApiKey: { type: String, select: false },
-    smsProviderConfig: { type: Schema.Types.Mixed, select: false }
+    siteName: { type: String, required: true, default: "Dr. Rashed" },
+    logo: { type: String, default: "" },
+    logoDark: { type: String, default: "" },
+    favicon: { type: String, default: "" },
+    appleTouchIcon: { type: String, default: "" },
+    defaultSeo: { type: Schema.Types.Mixed, default: () => ({}) },
+    seo: { type: Schema.Types.Mixed, default: () => ({}) },
+    facebookUrl: { type: String, default: "" },
+    linkedinUrl: { type: String, default: "" },
+    xUrl: { type: String, default: "" },
+    youtubeUrl: { type: String, default: "" },
+    telegramUrl: { type: String, default: "" },
+    contactPhone: { type: String, default: "+8801700000000" },
+    contactEmail: { type: String, default: "appointments@doctorcare.test" },
+    contactAddress: { type: String, default: "Dhaka, Bangladesh" },
+    footerDescription: { type: String, default: "A modern doctor portfolio and appointment management system." },
+    heroPrimaryCta: { type: String, default: "Book Appointment" },
+    heroSecondaryCta: { type: String, default: "Learn More" },
+    scheduleBadge: { type: String, default: "Live availability" },
+    scheduleTitle: { type: String, default: "Upcoming Schedules" },
+    scheduleDescription: { type: String, default: "Book from automatically generated slots and receive a queue number." },
+    content: { type: Schema.Types.Mixed, default: {} },
+    googleMapsApiKey: { type: String, select: false, default: "" },
+    smsProviderConfig: { type: Schema.Types.Mixed, select: false, default: {} }
   },
   { timestamps: true }
 );
 
+// Export Mongoose Models with Next.js HMR caching
+export const AdminUserModel = models.AdminUser ?? model("AdminUser", AdminUserSchema);
 export const DoctorModel = models.Doctor ?? model("Doctor", DoctorSchema);
 export const HospitalModel = models.Hospital ?? model("Hospital", HospitalSchema);
 export const ScheduleModel = models.Schedule ?? model("Schedule", ScheduleSchema);

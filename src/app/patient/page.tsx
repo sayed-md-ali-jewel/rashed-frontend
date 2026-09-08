@@ -10,7 +10,6 @@ import {
 } from "@/components/patient/patient-portal-view";
 import { AppointmentModel, MedicalRecordModel, PatientModel, PaymentModel } from "@/lib/models";
 import { connectMongo, hasMongoUri } from "@/lib/mongodb";
-import { getStrapiPatientData, hasStrapiConfig } from "@/lib/strapi";
 
 function parsePatientSession(value?: string): PatientSession {
   if (!value) return { fullName: "Patient", mobileNumber: "", address: "" };
@@ -65,26 +64,7 @@ async function getPatientPortalData(mobileNumber: string): Promise<{
   records: PatientMedicalRecord[];
   payments: PatientPayment[];
 }> {
-  if (!mobileNumber) {
-    return { appointments: [], records: [], payments: [] };
-  }
-
-  if (hasStrapiConfig()) {
-    try {
-      const data = await getStrapiPatientData(mobileNumber);
-      if (data.appointments.length > 0 || data.payments.length > 0) {
-        return data as {
-          appointments: PatientAppointment[];
-          records: PatientMedicalRecord[];
-          payments: PatientPayment[];
-        };
-      }
-    } catch {
-      // fallback to mongo
-    }
-  }
-
-  if (!hasMongoUri()) {
+  if (!mobileNumber || !hasMongoUri()) {
     return { appointments: [], records: [], payments: [] };
   }
 

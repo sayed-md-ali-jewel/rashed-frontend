@@ -23,13 +23,26 @@ export async function connectMongo() {
     throw new Error("MONGODB_URI is not configured");
   }
 
-  if (cache.conn) {
+  if (cache.conn && mongoose.connection.readyState === 1) {
     return cache.conn;
   }
 
-  cache.promise ??= mongoose.connect(MONGODB_URI, {
-    bufferCommands: false
-  });
+  if (!cache.promise) {
+    cache.promise = mongoose
+      .connect(MONGODB_URI, {
+        bufferCommands: false,
+        serverSelectionTimeoutMS: 3500 // Fast timeout if MongoDB is offline
+      })
+      .then((m) => {
+        cache.conn = m;
+        return m;
+      })
+      .catch((err) => {
+        cache.promise = null;
+        cache.conn = null;
+        throw err;
+      });
+  }
 
   cache.conn = await cache.promise;
   return cache.conn;

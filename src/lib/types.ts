@@ -126,6 +126,10 @@ export type GalleryItem = {
 
 export type WebsiteSetting = {
   siteName: string;
+  logo?: string;
+  logoDark?: string;
+  favicon?: string;
+  appleTouchIcon?: string;
   footerDescription: string;
   contactPhone: string;
   contactEmail: string;

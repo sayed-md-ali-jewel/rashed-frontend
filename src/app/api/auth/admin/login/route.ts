@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { AuthService } from "@/lib/services/auth.service";
 
 const schema = z.object({
-  username: z.string().min(1),
-  pin: z.string().min(4)
+  username: z.string().min(1, "Username is required"),
+  pin: z.string().min(4, "PIN must be at least 4 digits")
 });
 
 export async function POST(request: Request) {
@@ -13,20 +14,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid login details" }, { status: 422 });
   }
 
-  const username = process.env.ADMIN_DEMO_USER ?? "admin";
-  const pin = process.env.ADMIN_DEMO_PIN ?? "123456";
+  const user = await AuthService.verifyAdmin(parsed.data.username, parsed.data.pin);
 
-  if (parsed.data.username !== username || parsed.data.pin !== pin) {
+  if (!user) {
     return NextResponse.json({ error: "Incorrect username or PIN" }, { status: 401 });
   }
 
-  const response = NextResponse.json({ ok: true });
+  const response = NextResponse.json({ ok: true, user });
   response.cookies.set("admin_session", "active", {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 8
+    maxAge: 60 * 60 * 12 // 12 hours
   });
 
   return response;

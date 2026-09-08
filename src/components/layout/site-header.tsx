@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, CalendarDays, HeartPulse, Home, Menu, Star, UserRound, X } from "lucide-react";
+import {
+  Activity,
+  CalendarDays,
+  HeartPulse,
+  Home,
+  Menu,
+  Star,
+  UserRound,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import type { WebsiteSetting } from "@/lib/types";
 
@@ -12,7 +21,7 @@ const navItems = [
   { href: "/#profile", label: "About", icon: UserRound },
   { href: "/#services", label: "Services", icon: Activity },
   { href: "/#reviews", label: "Reviews", icon: Star },
-  { href: "/#contact", label: "Contact", icon: HeartPulse }
+  { href: "/#contact", label: "Contact", icon: HeartPulse },
 ] as const;
 
 export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
@@ -44,14 +53,32 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
     <>
       <header className="sticky top-0 z-50 border-b border-[#f1efea] bg-white/95 backdrop-blur-md">
         <div className="mx-auto flex h-[76px] max-w-[1340px] items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/" className="flex shrink-0 items-center gap-2.5" onClick={() => setOpen(false)}>
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blue text-white shadow-sm">
-              <HeartPulse className="h-5 w-5" aria-hidden />
-            </span>
-            <div className="shrink-0">
-              <span className="block text-[17px] font-extrabold tracking-tight text-ink whitespace-nowrap">{setting.siteName}</span>
-              <span className="block text-xs font-medium text-muted whitespace-nowrap">Specialist Physician</span>
-            </div>
+          <Link
+            href="/"
+            className="flex shrink-0 items-center gap-2.5"
+            onClick={() => setOpen(false)}
+          >
+            {setting.logo ? (
+              <img
+                src={setting.logo}
+                alt={setting.siteName || "Dr. Rashed"}
+                className="h-10 w-auto max-w-[180px] object-contain"
+              />
+            ) : (
+              <>
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue text-white font-black text-lg shadow-sm">
+                  R
+                </span>
+                <div className="shrink-0">
+                  <span className="block text-[18px] font-black tracking-tight text-ink whitespace-nowrap">
+                    {setting.siteName || "Dr. Rashed"}
+                  </span>
+                  <span className="block text-[11px] font-medium text-muted whitespace-nowrap">
+                    Specialist Physician
+                  </span>
+                </div>
+              </>
+            )}
           </Link>
 
           <ul className="hidden items-center gap-5 xl:gap-8 text-[15px] font-medium text-[#2a2a2a] lg:flex">
@@ -89,7 +116,11 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
             className="grid size-11 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-slate-50 text-ink transition active:scale-95 hover:bg-slate-100 cursor-pointer lg:hidden"
             onClick={() => setOpen((value) => !value)}
           >
-            {open ? <X className="h-5 w-5 text-slate-900" /> : <Menu className="h-5 w-5 text-slate-900" />}
+            {open ? (
+              <X className="h-5 w-5 text-slate-900" />
+            ) : (
+              <Menu className="h-5 w-5 text-slate-900" />
+            )}
           </button>
         </div>
 
@@ -123,13 +154,21 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
               </nav>
 
               <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-100">
-                <Link href="/patient" onClick={() => setOpen(false)} className="w-full">
+                <Link
+                  href="/patient"
+                  onClick={() => setOpen(false)}
+                  className="w-full"
+                >
                   <button className="w-full h-12 flex items-center justify-center gap-2 rounded-2xl border-2 border-slate-900 font-extrabold text-sm text-slate-900 hover:bg-slate-900 hover:text-white transition-all cursor-pointer">
                     <UserRound className="h-4 w-4" />
                     Patient Portal
                   </button>
                 </Link>
-                <Link href="/appointments" onClick={() => setOpen(false)} className="w-full">
+                <Link
+                  href="/appointments"
+                  onClick={() => setOpen(false)}
+                  className="w-full"
+                >
                   <button className="w-full h-12 flex items-center justify-center gap-2 rounded-2xl bg-slate-900 text-white font-extrabold text-sm shadow-md hover:bg-slate-800 transition-all cursor-pointer">
                     <CalendarDays className="h-4 w-4" />
                     Book Appointment

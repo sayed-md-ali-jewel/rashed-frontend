@@ -3,11 +3,8 @@ import { isValidObjectId } from "mongoose";
 import { getAdminCollection } from "@/lib/admin-models";
 import { apiError } from "@/lib/api-response";
 import { connectMongo, hasMongoUri } from "@/lib/mongodb";
-import {
-  deleteStrapiAdminRecord,
-  hasStrapiConfig,
-  updateStrapiAdminRecord
-} from "@/lib/strapi";
+import { ScheduleService } from "@/lib/services/schedule.service";
+import { AppointmentService } from "@/lib/services/appointment.service";
 
 type RouteContext = {
   params: Promise<{
@@ -19,17 +16,24 @@ type RouteContext = {
 export async function GET(_request: Request, { params }: RouteContext) {
   const { collection, id } = await params;
   const config = getAdminCollection(collection);
+
   if (!config) {
     return NextResponse.json({ error: "Unknown collection" }, { status: 404 });
   }
 
-  if (!hasMongoUri() || !isValidObjectId(id)) {
-    return NextResponse.json({ error: "Record not found" }, { status: 404 });
+  if (!hasMongoUri()) {
+    return NextResponse.json({ error: "MONGODB_URI is not configured" }, { status: 503 });
   }
 
   await connectMongo();
 
-  const data = await config.model.findById(id).lean();
+  let data = null;
+  if (isValidObjectId(id)) {
+    data = await config.model.findById(id).lean();
+  } else if ("slug" in config.model.schema.paths) {
+    data = await config.model.findOne({ slug: id }).lean();
+  }
+
   if (!data) {
     return NextResponse.json({ error: "Record not found" }, { status: 404 });
   }
@@ -39,35 +43,37 @@ export async function GET(_request: Request, { params }: RouteContext) {
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   const { collection, id } = await params;
-  const payload = await request.json();
-
-  if (hasStrapiConfig()) {
-    try {
-      const data = await updateStrapiAdminRecord(collection, id, payload);
-      return NextResponse.json({ data });
-    } catch (error) {
-      if (!hasMongoUri() || !isValidObjectId(id)) {
-        return NextResponse.json(
-          { error: error instanceof Error ? error.message : "Failed to update record in Strapi" },
-          { status: 422 }
-        );
-      }
-    }
-  }
-
   const config = getAdminCollection(collection);
+
   if (!config) {
     return NextResponse.json({ error: "Unknown collection" }, { status: 404 });
   }
 
-  if (!hasMongoUri() || !isValidObjectId(id)) {
-    return NextResponse.json({ error: "Invalid record ID" }, { status: 400 });
+  if (!hasMongoUri()) {
+    return NextResponse.json({ error: "MONGODB_URI is not configured" }, { status: 503 });
   }
 
   await connectMongo();
+  const payload = await request.json();
 
   try {
-    const data = await config.model.findByIdAndUpdate(id, payload, {
+    if (collection === "schedules") {
+      const data = await ScheduleService.upsertSchedule(payload, id);
+      if (!data) return NextResponse.json({ error: "Record not found" }, { status: 404 });
+      return NextResponse.json({ data });
+    }
+
+    if (collection === "appointments" && payload.status) {
+      const data = await AppointmentService.updateStatus(id, payload.status, {
+        notes: payload.notes,
+        patientMessage: payload.patientMessage,
+        paymentStatus: payload.paymentStatus
+      });
+      return NextResponse.json({ data });
+    }
+
+    const query = isValidObjectId(id) ? { _id: id } : { slug: id };
+    const data = await config.model.findOneAndUpdate(query, payload, {
       new: true,
       runValidators: true
     });
@@ -84,33 +90,21 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
 export async function DELETE(_request: Request, { params }: RouteContext) {
   const { collection, id } = await params;
-
-  if (hasStrapiConfig()) {
-    try {
-      await deleteStrapiAdminRecord(collection, id);
-      return NextResponse.json({ deleted: true });
-    } catch (error) {
-      if (!hasMongoUri() || !isValidObjectId(id)) {
-        return NextResponse.json(
-          { error: error instanceof Error ? error.message : "Failed to delete record in Strapi" },
-          { status: 422 }
-        );
-      }
-    }
-  }
-
   const config = getAdminCollection(collection);
+
   if (!config) {
     return NextResponse.json({ error: "Unknown collection" }, { status: 404 });
   }
 
-  if (!hasMongoUri() || !isValidObjectId(id)) {
-    return NextResponse.json({ error: "Invalid record ID" }, { status: 400 });
+  if (!hasMongoUri()) {
+    return NextResponse.json({ error: "MONGODB_URI is not configured" }, { status: 503 });
   }
 
   await connectMongo();
 
-  const data = await config.model.findByIdAndDelete(id);
+  const query = isValidObjectId(id) ? { _id: id } : { slug: id };
+  const data = await config.model.findOneAndDelete(query);
+
   if (!data) {
     return NextResponse.json({ error: "Record not found" }, { status: 404 });
   }

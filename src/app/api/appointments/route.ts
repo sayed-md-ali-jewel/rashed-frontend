@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { generateSlots } from "@/lib/booking";
-import { getScheduleById } from "@/lib/cms-data";
-import { AppointmentModel, NotificationModel, PatientModel, PaymentModel } from "@/lib/models";
-import { connectMongo, hasMongoUri } from "@/lib/mongodb";
-import { bookStrapiAppointment, hasStrapiConfig } from "@/lib/strapi";
+import { AppointmentService } from "@/lib/services/appointment.service";
+import { hasMongoUri } from "@/lib/mongodb";
 
 const schema = z.object({
-  patientName: z.string().trim().min(2),
+  patientName: z.string().trim().min(2, "Patient name must be at least 2 characters"),
   address: z.string().trim().optional().or(z.literal("")),
-  mobileNumber: z.string().trim().regex(/^(\+?88)?01[3-9]\d{8}$/),
-  scheduleId: z.string().min(1),
-  slotStart: z.string().min(1),
+  mobileNumber: z.string().trim().regex(/^(\+?88)?01[3-9]\d{8}$/, "Please enter a valid Bangladeshi mobile number"),
+  scheduleId: z.string().min(1, "Schedule is required"),
+  slotStart: z.string().min(1, "Slot time is required"),
   email: z.string().email().optional().or(z.literal("")),
   dateOfBirth: z.string().optional().or(z.literal("")),
   age: z.coerce.number().min(0).max(130).optional(),
@@ -25,119 +22,30 @@ const schema = z.object({
 export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid appointment data" }, { status: 422 });
-  }
-
-  const schedule = await getScheduleById(parsed.data.scheduleId);
-  if (!schedule) {
-    return NextResponse.json({ error: "Schedule not found" }, { status: 404 });
-  }
-
-  const targetTime = new Date(parsed.data.slotStart).getTime();
-  const allSlots = generateSlots(schedule);
-  const slot = allSlots.find((item) => new Date(item.start).getTime() === targetTime);
-  if (!slot || !slot.available) {
-    return NextResponse.json({ error: "Slot is no longer available" }, { status: 409 });
-  }
-
-  if (hasStrapiConfig()) {
-    try {
-      const appointment = await bookStrapiAppointment({
-        ...parsed.data,
-        slotStart: slot.start
-      });
-      return NextResponse.json(appointment);
-    } catch (error) {
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Slot is no longer available" },
-        { status: 409 }
-      );
-    }
+    return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid appointment data" }, { status: 422 });
   }
 
   if (!hasMongoUri()) {
+    // Preview mode fallback
     return NextResponse.json({
       appointmentId: crypto.randomUUID(),
-      queueNumber: slot.queueNumber,
+      queueNumber: 1,
       status: "pending",
       mode: "preview"
     });
   }
 
-  await connectMongo();
-
   try {
-    const patient = await PatientModel.findOneAndUpdate(
-      { mobileNumber: parsed.data.mobileNumber },
-      {
-        fullName: parsed.data.patientName,
-        mobileNumber: parsed.data.mobileNumber,
-        email: parsed.data.email,
-        dateOfBirth: parsed.data.dateOfBirth ? new Date(parsed.data.dateOfBirth) : undefined,
-        age: parsed.data.age,
-        gender: parsed.data.gender,
-        address: parsed.data.address,
-        emergencyContact: parsed.data.emergencyContact,
-        medicalHistory: parsed.data.medicalHistory
-      },
-      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
-    );
-
-    const appointment = await AppointmentModel.create({
-      patientId: patient._id,
-      patientName: parsed.data.patientName,
-      mobileNumber: parsed.data.mobileNumber,
-      email: parsed.data.email,
-      dateOfBirth: parsed.data.dateOfBirth ? new Date(parsed.data.dateOfBirth) : undefined,
-      age: parsed.data.age,
-      gender: parsed.data.gender,
-      address: parsed.data.address,
-      emergencyContact: parsed.data.emergencyContact,
-      medicalHistory: parsed.data.medicalHistory,
-      reason: parsed.data.reason,
-      uploadedReports: parsed.data.uploadedReports ?? [],
-      hospitalName: schedule.hospital.name,
-      scheduleId: schedule.id,
-      slotStart: new Date(slot.start),
-      slotEnd: new Date(slot.end),
-      queueNumber: slot.queueNumber,
-      status: "pending",
-      paymentStatus: "pending",
-      paymentAmount: 0
-    });
-
-    await Promise.all([
-      PaymentModel.create({
-        appointmentId: appointment._id,
-        patientId: patient._id,
-        patientName: parsed.data.patientName,
-        hospitalName: schedule.hospital.name,
-        consultationFee: schedule.fee,
-        discount: 0,
-        totalAmount: schedule.fee,
-        status: "pending"
-      }),
-      NotificationModel.create({
-        recipientType: "admin",
-        appointmentId: appointment._id,
-        patientId: patient._id,
-        channel: "in_app",
-        event: "appointment_request",
-        title: "New appointment request",
-        message: `${parsed.data.patientName} requested Queue ${slot.queueNumber} at ${schedule.hospital.name}.`
-      })
-    ]);
-
-    return NextResponse.json({
-      appointmentId: String(appointment._id),
-      queueNumber: appointment.queueNumber,
-      status: appointment.status
-    });
+    const appointment = await AppointmentService.bookAppointment(parsed.data);
+    return NextResponse.json(appointment);
   } catch (error) {
-    if (typeof error === "object" && error !== null && "code" in error && error.code === 11000) {
+    const message = error instanceof Error ? error.message : "Failed to book appointment";
+    if (message.includes("available") || message.includes("duplicate") || message.includes("E11000")) {
       return NextResponse.json({ error: "Slot is no longer available" }, { status: 409 });
     }
-
-    throw error;
+    if (message.includes("not found")) {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
