@@ -16,12 +16,12 @@ jobs:
       REVALIDATE_SECRET: ${{ vars.REVALIDATE_SECRET || secrets.REVALIDATE_SECRET }}
       ADMIN_DEMO_USER: ${{ vars.ADMIN_DEMO_USER || secrets.ADMIN_DEMO_USER }}
       ADMIN_DEMO_PIN: ${{ vars.ADMIN_DEMO_PIN || secrets.ADMIN_DEMO_PIN }}
-      DEPLOY_SERVER: ${{ vars.DEPLOY_SERVER || secrets.DEPLOY_SERVER || vars.FTP_SERVER || secrets.FTP_SERVER }}
-      DEPLOY_USERNAME: ${{ vars.DEPLOY_USERNAME || secrets.DEPLOY_USERNAME || vars.FTP_USERNAME || secrets.FTP_USERNAME }}
-      DEPLOY_PASSWORD: ${{ vars.DEPLOY_PASSWORD || secrets.DEPLOY_PASSWORD || vars.FTP_PASSWORD || secrets.FTP_PASSWORD }}
-      DEPLOY_PORT: ${{ vars.DEPLOY_PORT || secrets.DEPLOY_PORT || vars.FTP_PORT || secrets.FTP_PORT || '21' }}
-      DEPLOY_REMOTE_DIR: ${{ vars.DEPLOY_REMOTE_DIR || secrets.DEPLOY_REMOTE_DIR || vars.FTP_SERVER_DIR || secrets.FTP_SERVER_DIR || './' }}
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      FTP_SERVER: ${{ vars.FTP_SERVER || secrets.FTP_SERVER }}
+      FTP_USERNAME: ${{ vars.FTP_USERNAME || secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ vars.FTP_PASSWORD || secrets.FTP_PASSWORD }}
+      FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || secrets.FTP_PROTOCOL || 'ftp' }}
+      FTP_PORT: ${{ vars.FTP_PORT || secrets.FTP_PORT || '21' }}
+      FTP_SERVER_DIR: ${{ vars.FTP_SERVER_DIR || secrets.FTP_SERVER_DIR || '/public_html/drrashed.bd/' }}
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
     steps:
@@ -40,14 +40,14 @@ jobs:
       - name: Validate deploy variables
         run: |
           missing=0
-          for name in DEPLOY_SERVER DEPLOY_USERNAME; do
+          for name in FTP_SERVER FTP_USERNAME FTP_PASSWORD; do
             if [ -z "${!name}" ]; then
-              echo "::error::Missing GitHub variable/secret: $name (or FTP_$name)"
+              echo "::error::Missing GitHub variable/secret: $name"
               missing=1
             fi
           done
-          if [ -z "$DEPLOY_PASSWORD" ] && [ -z "$SSH_PRIVATE_KEY" ]; then
-            echo "::error::Missing authentication: provide either DEPLOY_PASSWORD (or FTP_PASSWORD) or SSH_PRIVATE_KEY"
+          if [ "$FTP_PROTOCOL" != "ftp" ] && [ "$FTP_PROTOCOL" != "ftps" ]; then
+            echo "::error::FTP_PROTOCOL must be either ftp or ftps. Use an SFTP action instead if your server only supports SFTP."
             missing=1
           fi
           exit "$missing"
@@ -106,42 +106,16 @@ jobs:
           } > deploy/.env.production
           cp deploy/.env.production deploy/.env
 
-      - name: Deploy to Webuzo via FTP (Port 21)
-        if: env.DEPLOY_PORT == '21'
+      - name: Upload to Webuzo by FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ env.DEPLOY_SERVER }}
-          username: ${{ env.DEPLOY_USERNAME }}
-          password: ${{ env.DEPLOY_PASSWORD }}
-          protocol: ftp
-          port: 21
+          server: ${{ env.FTP_SERVER }}
+          username: ${{ env.FTP_USERNAME }}
+          password: ${{ env.FTP_PASSWORD }}
+          protocol: ${{ env.FTP_PROTOCOL }}
+          port: ${{ env.FTP_PORT }}
           local-dir: ./deploy/
-          server-dir: ${{ env.DEPLOY_REMOTE_DIR }}
+          server-dir: ${{ env.FTP_SERVER_DIR }}
           exclude: |
             **/.git*
             **/.git*/**
-
-      - name: Deploy to Webuzo via SFTP / SSH (Port 22 or other)
-        if: env.DEPLOY_PORT != '21'
-        run: |
-          echo "Installing sshpass and rsync..."
-          sudo apt-get update -y && sudo apt-get install -y sshpass rsync
-
-          REMOTE_DIR="${DEPLOY_REMOTE_DIR%/}"
-          SSH_OPTS="-p ${DEPLOY_PORT} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-
-          if [ -n "${SSH_PRIVATE_KEY}" ]; then
-            echo "Deploying with SSH Private Key on port ${DEPLOY_PORT}..."
-            mkdir -p ~/.ssh
-            echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
-            chmod 600 ~/.ssh/id_rsa
-
-            ssh ${SSH_OPTS} -i ~/.ssh/id_rsa "${DEPLOY_USERNAME}@${DEPLOY_SERVER}" "mkdir -p ${REMOTE_DIR}"
-            rsync -avz --delete -e "ssh ${SSH_OPTS} -i ~/.ssh/id_rsa" ./deploy/ "${DEPLOY_USERNAME}@${DEPLOY_SERVER}:${REMOTE_DIR}/"
-          elif [ -n "${DEPLOY_PASSWORD}" ]; then
-            echo "Deploying with SSH/SFTP Password on port ${DEPLOY_PORT}..."
-            sshpass -p "${DEPLOY_PASSWORD}" ssh ${SSH_OPTS} "${DEPLOY_USERNAME}@${DEPLOY_SERVER}" "mkdir -p ${REMOTE_DIR}"
-            sshpass -p "${DEPLOY_PASSWORD}" rsync -avz --delete -e "ssh ${SSH_OPTS}" ./deploy/ "${DEPLOY_USERNAME}@${DEPLOY_SERVER}:${REMOTE_DIR}/"
-          fi
-
-          echo "🚀 Deployment to Webuzo via SFTP/SSH completed successfully!"
