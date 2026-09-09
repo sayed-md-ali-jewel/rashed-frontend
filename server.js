@@ -3,7 +3,14 @@ const next = require('next');
 const fs = require('fs');
 const path = require('path');
 
-const dev = process.env.NODE_ENV !== 'production';
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'production';
+}
+if (!process.env.NEXT_PUBLIC_SITE_URL && process.env.NODE_ENV === 'production') {
+  process.env.NEXT_PUBLIC_SITE_URL = 'https://drrashed.bd';
+}
+
+const dev = process.env.NODE_ENV === 'development';
 const hostname = process.env.HOSTNAME || '0.0.0.0';
 const port = parseInt(process.env.PORT || '3000', 10);
 

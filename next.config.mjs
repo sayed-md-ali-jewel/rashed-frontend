@@ -1,20 +1,36 @@
 const nextConfig = {
   output: "standalone",
   env: {
-    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+    NEXT_PUBLIC_SITE_URL:
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.NODE_ENV === "development"
+        ? "http://localhost:3000"
+        : "https://drrashed.bd"),
   },
   images: {
     unoptimized: true,
     remotePatterns: [
       {
-        protocol: "http",
-        hostname: "**"
+        protocol: "https",
+        hostname: "drrashed.bd",
+        pathname: "/uploads/**",
       },
       {
         protocol: "https",
-        hostname: "**"
-      }
-    ]
+        hostname: "drrashed.bd",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        pathname: "/**",
+      },
+    ],
   },
   async headers() {
     return [
@@ -23,38 +39,40 @@ const nextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+            value:
+              "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
           },
           {
             key: "Pragma",
-            value: "no-cache"
+            value: "no-cache",
           },
           {
             key: "Expires",
-            value: "0"
-          }
-        ]
+            value: "0",
+          },
+        ],
       },
       {
         source: "/api/:path*",
         headers: [
           {
             key: "Cache-Control",
-            value: "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+            value:
+              "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
           },
           {
             key: "Pragma",
-            value: "no-cache"
+            value: "no-cache",
           },
           {
             key: "Expires",
-            value: "0"
-          }
-        ]
-      }
+            value: "0",
+          },
+        ],
+      },
     ];
   },
-  typedRoutes: true
+  typedRoutes: true,
 };
 
 export default nextConfig;

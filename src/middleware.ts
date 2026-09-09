@@ -1,22 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 function getOrigin(request: NextRequest): string {
-  // 1. If explicit NEXT_PUBLIC_SITE_URL or NEXT_PUBLIC_APP_URL is configured and not localhost, use it
-  const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
-  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
-    return envUrl.replace(/\/$/, "");
-  }
-
-  // 2. Check X-Forwarded-Host from reverse proxies
+  // 1. Check X-Forwarded-Host from reverse proxies (e.g. Nginx, Cloudflare, cPanel)
   const forwardedHost = request.headers.get("x-forwarded-host");
-  if (forwardedHost && !forwardedHost.includes("localhost") && !forwardedHost.includes("127.0.0.1")) {
+  if (forwardedHost) {
     const host = forwardedHost.split(",")[0].trim();
-    const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
-    const proto = forwardedProto.split(",")[0].trim();
-    return `${proto}://${host}`;
+    if (host && !host.includes("localhost") && !host.includes("127.0.0.1")) {
+      const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+      const proto = forwardedProto.split(",")[0].trim();
+      return `${proto}://${host}`;
+    }
   }
 
-  // 3. Check Host header
+  // 2. Check Host header if it contains a real domain
   const host = request.headers.get("host");
   if (host && !host.includes("localhost") && !host.includes("127.0.0.1")) {
     const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
@@ -24,14 +20,48 @@ function getOrigin(request: NextRequest): string {
     return `${proto}://${host}`;
   }
 
-  // 4. If in production environment, default base URL to https://drrashed.bd
-  if (process.env.NODE_ENV === "production") {
+  // 3. Check Referer header if available
+  const referer = request.headers.get("referer");
+  if (referer) {
+    try {
+      const refUrl = new URL(referer);
+      if (
+        refUrl.hostname &&
+        !refUrl.hostname.includes("localhost") &&
+        !refUrl.hostname.includes("127.0.0.1")
+      ) {
+        return `${refUrl.protocol}//${refUrl.host}`;
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+  }
+
+  // 4. Explicit environment variable if configured and not localhost
+  const envUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.SITE_URL;
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+    return envUrl.replace(/\/$/, "");
+  }
+
+  // 5. If the connection was HTTPS or in production, always resolve to the production domain
+  const proto = (
+    request.headers.get("x-forwarded-proto") ||
+    request.nextUrl.protocol ||
+    ""
+  ).replace(":", "");
+  if (proto === "https" || process.env.NODE_ENV === "production") {
     return "https://drrashed.bd";
   }
 
-  // 5. Local development fallback
-  const proto = request.nextUrl.protocol.replace(":", "") || "http";
-  return `${proto}://${request.nextUrl.host || "localhost:3000"}`;
+  // 6. Local development fallback only when on HTTP localhost
+  if (host?.includes("localhost") || host?.includes("127.0.0.1")) {
+    return `http://${host}`;
+  }
+
+  return "https://drrashed.bd";
 }
 
 function createRedirect(request: NextRequest, targetPath: string, nextParam?: string) {
