@@ -201,34 +201,41 @@ export const testimonials: Testimonial[] = [
 
 export const gallery: GalleryItem[] = [
   {
-    title: "Consultation Room",
-    image:
-      "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=900&q=80",
-    alt: "Modern clinic consultation room"
+    title: "City Care Hospital Chamber",
+    category: "Main Hospital",
+    description: "Fully equipped executive consultation chamber with private examination suite and vitals monitoring station.",
+    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80",
+    images: [
+      "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1582719471384-894fbb16e074?auto=format&fit=crop&w=1200&q=80"
+    ],
+    alt: "City Care Hospital executive consultation suite"
   },
   {
-    title: "Patient Care",
-    image:
-      "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=900&q=80",
-    alt: "Doctor reviewing patient notes"
+    title: "Green Life Clinic & Diagnostic",
+    category: "Specialist Clinic",
+    description: "Modern outpatient clinic featuring digital diagnostic support, patient waiting lounge, and ECG suite.",
+    image: "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=80",
+    images: [
+      "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=1200&q=80"
+    ],
+    alt: "Green Life Clinic & Diagnostic center"
   },
   {
-    title: "Reception Desk",
-    image:
-      "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=900&q=80",
-    alt: "Clinic reception desk"
-  },
-  {
-    title: "Diagnostic Support",
-    image:
-      "https://images.unsplash.com/photo-1582719471384-894fbb16e074?auto=format&fit=crop&w=900&q=80",
-    alt: "Medical diagnostic equipment"
-  },
-  {
-    title: "Care Team",
-    image:
-      "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=900&q=80",
-    alt: "Healthcare team preparing patient care"
+    title: "Central Health Chamber & Lab",
+    category: "Diagnostic Chamber",
+    description: "Evening chamber setup with on-site sample collection, ultrasonic imaging, and dedicated patient care lounge.",
+    image: "https://images.unsplash.com/photo-1504813184591-01572f98c85f?auto=format&fit=crop&w=1200&q=80",
+    images: [
+      "https://images.unsplash.com/photo-1504813184591-01572f98c85f?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1512678080530-7760d81faba6?auto=format&fit=crop&w=1200&q=80"
+    ],
+    alt: "Central Health Chamber and diagnostic lab"
   }
 ];
 

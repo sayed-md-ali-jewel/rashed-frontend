@@ -188,10 +188,21 @@ function mapTestimonial(item: MongoDocument): Testimonial {
 }
 
 function mapGalleryItem(item: MongoDocument): GalleryItem {
+  const images = asStringArray(item.images, []);
+  const primaryImage = asString(item.image, images[0] || gallery[0]?.image);
+  const resolvedImages = images.length > 0 ? images : [primaryImage].filter(Boolean);
+
   return {
-    title: asString(item.title, "Clinic photo"),
-    image: asString(item.image, gallery[0]?.image),
-    alt: asString(item.alt, asString(item.altText, asString(item.title, "Clinic gallery image")))
+    _id: item._id ? String(item._id) : undefined,
+    id: item._id ? String(item._id) : undefined,
+    title: asString(item.title, "Clinic Facility"),
+    image: primaryImage,
+    images: resolvedImages,
+    alt: asString(item.alt, asString(item.altText, asString(item.title, "Clinic gallery image"))),
+    altText: asString(item.altText, asString(item.alt, asString(item.title, "Clinic gallery image"))),
+    category: asString(item.category, "Chamber"),
+    description: asString(item.description, ""),
+    active: item.active !== false
   };
 }
 

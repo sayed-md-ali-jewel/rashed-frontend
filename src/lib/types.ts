@@ -119,9 +119,16 @@ export type Testimonial = {
 };
 
 export type GalleryItem = {
+  _id?: string;
+  id?: string;
   title: string;
   image: string;
-  alt: string;
+  images?: string[];
+  alt?: string;
+  altText?: string;
+  category?: string;
+  description?: string;
+  active?: boolean;
 };
 
 export type WebsiteSetting = {

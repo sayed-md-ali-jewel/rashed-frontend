@@ -75,6 +75,7 @@ jobs:
           if [ -d public ]; then
             cp -r public deploy/public
           fi
+          mkdir -p deploy/public/uploads
 
           # Clean up local environment and git traces
           rm -rf deploy/.git deploy/.github deploy/.env.local deploy/.env.example
@@ -119,3 +120,4 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
+            public/uploads/**

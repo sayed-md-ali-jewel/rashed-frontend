@@ -75,16 +75,21 @@ export function FileUploadInput({
 
   const handleCopyUrl = () => {
     if (!value) return;
-    const fullUrl = value.startsWith("http") ? value : typeof window !== "undefined" ? window.location.origin + value : value;
+    const fullUrl = value.startsWith("http")
+      ? value
+      : typeof window !== "undefined"
+      ? `${window.location.origin}${value.startsWith("/") ? "" : "/"}${value}`
+      : value;
     navigator.clipboard.writeText(fullUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const isImage = value && (
-    value.match(/\.(jpeg|jpg|gif|png|webp|svg)($|\?)/i) ||
+    value.match(/\.(jpeg|jpg|gif|png|webp|svg|avif|bmp|ico)($|\?)/i) ||
     value.startsWith("data:image/") ||
     value.startsWith("/uploads/") ||
+    value.includes("/uploads/") ||
     value.includes("images.unsplash.com")
   );
 

@@ -16,7 +16,10 @@ const poppins = Poppins({
 
 export async function generateMetadata(): Promise<Metadata> {
   const setting = await getWebsiteSetting();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl = rawSiteUrl.startsWith("http://") || rawSiteUrl.startsWith("https://")
+    ? rawSiteUrl
+    : `https://${rawSiteUrl}`;
 
   return {
     metadataBase: new URL(siteUrl),

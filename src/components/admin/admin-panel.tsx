@@ -12,8 +12,10 @@ import {
   Calendar,
   CalendarCheck,
   CalendarClock,
+  Camera,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   ClipboardList,
   Clock,
@@ -32,6 +34,7 @@ import {
   HelpCircle,
   Hospital,
   Image as ImageIcon,
+  Images,
   Info,
   KeyRound,
   Layers,
@@ -287,8 +290,10 @@ type GalleryRecord = {
   id?: string;
   title?: string;
   image?: string;
+  images?: string[];
   alt?: string;
   category?: string;
+  description?: string;
   active?: boolean;
 };
 
@@ -2526,13 +2531,49 @@ export function AdminPanel() {
                                 name: e.target.value,
                               })
                             }
+                            placeholder="Dr. Md. Rashedul Alam"
                             className="border-slate-800 bg-slate-950 text-slate-200"
                           />
                         </div>
 
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-slate-400 mb-1">
+                              Designation
+                            </label>
+                            <Input
+                              value={doctorProfile.designation || ""}
+                              onChange={(e) =>
+                                setDoctorProfile({
+                                  ...doctorProfile,
+                                  designation: e.target.value,
+                                })
+                              }
+                              placeholder="Senior Consultant"
+                              className="border-slate-800 bg-slate-950 text-slate-200"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-400 mb-1">
+                              Specialization
+                            </label>
+                            <Input
+                              value={doctorProfile.specialization || ""}
+                              onChange={(e) =>
+                                setDoctorProfile({
+                                  ...doctorProfile,
+                                  specialization: e.target.value,
+                                })
+                              }
+                              placeholder="Internal Medicine"
+                              className="border-slate-800 bg-slate-950 text-slate-200"
+                            />
+                          </div>
+                        </div>
+
                         <div>
                           <label className="block text-slate-400 mb-1">
-                            Title & Specialty
+                            Title & Specialty Line
                           </label>
                           <Input
                             value={doctorProfile.title || ""}
@@ -2542,6 +2583,7 @@ export function AdminPanel() {
                                 title: e.target.value,
                               })
                             }
+                            placeholder="Consultant Medicine Specialist"
                             className="border-slate-800 bg-slate-950 text-slate-200"
                           />
                         </div>
@@ -2561,6 +2603,7 @@ export function AdminPanel() {
                                   medicalRegistrationNumber: e.target.value,
                                 })
                               }
+                              placeholder="BMDC A-123456"
                               className="border-slate-800 bg-slate-950 text-slate-200"
                             />
                           </div>
@@ -2620,6 +2663,7 @@ export function AdminPanel() {
                                 biography: e.target.value,
                               })
                             }
+                            placeholder="A patient-focused clinician providing evidence-based care..."
                             className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 focus:outline-none focus:border-teal-500"
                           />
                         </div>
@@ -2633,7 +2677,7 @@ export function AdminPanel() {
                         <span>Hero Section & Fees</span>
                       </h3>
 
-                      <div className="space-y-3 text-xs">
+                      <div className="space-y-4 text-xs">
                         <div>
                           <label className="block text-slate-400 mb-1">
                             Hero Badge Text
@@ -2646,6 +2690,7 @@ export function AdminPanel() {
                                 heroBadge: e.target.value,
                               })
                             }
+                            placeholder="Board Certified Physician"
                             className="border-slate-800 bg-slate-950 text-slate-200"
                           />
                         </div>
@@ -2654,7 +2699,8 @@ export function AdminPanel() {
                           <label className="block text-slate-400 mb-1">
                             Hero Intro Text
                           </label>
-                          <Input
+                          <textarea
+                            rows={3}
                             value={doctorProfile.heroIntro || ""}
                             onChange={(e) =>
                               setDoctorProfile({
@@ -2662,10 +2708,183 @@ export function AdminPanel() {
                                 heroIntro: e.target.value,
                               })
                             }
-                            className="border-slate-800 bg-slate-950 text-slate-200"
+                            placeholder="Compassionate healthcare focused on your wellness..."
+                            className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 focus:outline-none focus:border-teal-500"
                           />
                         </div>
 
+                        {/* Hero Statistics Counters (heroStats) */}
+                        <div className="rounded-xl border border-slate-800/90 bg-slate-950/70 p-3.5 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-semibold text-slate-200 text-xs block">
+                                Hero Statistics Counter Cards
+                              </span>
+                              <span className="text-[10px] text-slate-500">
+                                Displayed in the 4-column counter cards under CTA buttons
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const current = Array.isArray(doctorProfile.heroStats) && doctorProfile.heroStats.length > 0
+                                  ? doctorProfile.heroStats
+                                  : [
+                                      { label: "Patients Served", value: "5000+" },
+                                      { label: "Years Experience", value: "15+" },
+                                      { label: "Success Rate", value: "98%" },
+                                      { label: "Emergency Care", value: "24/7" },
+                                    ];
+                                setDoctorProfile({
+                                  ...doctorProfile,
+                                  heroStats: [...current, { label: "Happy Patients", value: "100%" }],
+                                });
+                              }}
+                              className="h-6 px-2 text-[10px] border-slate-700 bg-slate-800 text-teal-300 hover:text-white rounded-lg gap-1"
+                            >
+                              <Plus className="h-3 w-3" />
+                              <span>Add Stat</span>
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {(Array.isArray(doctorProfile.heroStats) && doctorProfile.heroStats.length > 0
+                              ? doctorProfile.heroStats
+                              : [
+                                  { label: "Patients Served", value: "5000+" },
+                                  { label: "Years Experience", value: "15+" },
+                                  { label: "Success Rate", value: "98%" },
+                                  { label: "Emergency Care", value: "24/7" },
+                                ]
+                            ).map((stat: { label: string; value: string }, idx: number) => {
+                              const statsList = Array.isArray(doctorProfile.heroStats) && doctorProfile.heroStats.length > 0
+                                ? doctorProfile.heroStats
+                                : [
+                                    { label: "Patients Served", value: "5000+" },
+                                    { label: "Years Experience", value: "15+" },
+                                    { label: "Success Rate", value: "98%" },
+                                    { label: "Emergency Care", value: "24/7" },
+                                  ];
+                              return (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800"
+                                >
+                                  <div className="flex-1 grid grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-0.5 font-medium">
+                                        Value (e.g. 5000+)
+                                      </label>
+                                      <Input
+                                        value={stat.value || ""}
+                                        onChange={(e) => {
+                                          const updated = [...statsList];
+                                          updated[idx] = {
+                                            ...updated[idx],
+                                            value: e.target.value,
+                                          };
+                                          setDoctorProfile({
+                                            ...doctorProfile,
+                                            heroStats: updated,
+                                          });
+                                        }}
+                                        placeholder="5000+"
+                                        className="h-7 text-xs border-slate-800 bg-slate-950 text-slate-200"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-0.5 font-medium">
+                                        Label (e.g. Patients)
+                                      </label>
+                                      <Input
+                                        value={stat.label || ""}
+                                        onChange={(e) => {
+                                          const updated = [...statsList];
+                                          updated[idx] = {
+                                            ...updated[idx],
+                                            label: e.target.value,
+                                          };
+                                          setDoctorProfile({
+                                            ...doctorProfile,
+                                            heroStats: updated,
+                                          });
+                                        }}
+                                        placeholder="Patients Served"
+                                        className="h-7 text-xs border-slate-800 bg-slate-950 text-slate-200"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {statsList.length > 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const updated = statsList.filter(
+                                          (_: any, i: number) => i !== idx,
+                                        );
+                                        setDoctorProfile({
+                                          ...doctorProfile,
+                                          heroStats: updated,
+                                        });
+                                      }}
+                                      className="h-7 w-7 p-0 text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg shrink-0 self-end mb-0.5"
+                                      title="Delete stat card"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Floating Care Card */}
+                        <div className="rounded-xl border border-slate-800/90 bg-slate-950/70 p-3.5 space-y-2.5">
+                          <span className="font-semibold text-slate-200 text-xs block">
+                            Hero Floating Care Card
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div>
+                              <label className="block text-slate-400 mb-1">
+                                Card Title
+                              </label>
+                              <Input
+                                value={doctorProfile.heroCareTitle || ""}
+                                onChange={(e) =>
+                                  setDoctorProfile({
+                                    ...doctorProfile,
+                                    heroCareTitle: e.target.value,
+                                  })
+                                }
+                                placeholder="Patient-Centered Care"
+                                className="border-slate-800 bg-slate-950 text-slate-200"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-slate-400 mb-1">
+                                Card Subtitle / Description
+                              </label>
+                              <Input
+                                value={doctorProfile.heroCareDescription || ""}
+                                onChange={(e) =>
+                                  setDoctorProfile({
+                                    ...doctorProfile,
+                                    heroCareDescription: e.target.value,
+                                  })
+                                }
+                                placeholder="Personalized treatment plans for every patient."
+                                className="border-slate-800 bg-slate-950 text-slate-200"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Fees and Contact */}
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-slate-400 mb-1">
@@ -3481,9 +3700,10 @@ export function AdminPanel() {
                           <Button
                             onClick={() => {
                               if (m.url) {
-                                navigator.clipboard.writeText(
-                                  window.location.origin + m.url,
-                                );
+                                const fullUrl = m.url.startsWith("http")
+                                  ? m.url
+                                  : `${typeof window !== "undefined" ? window.location.origin : ""}${m.url.startsWith("/") ? "" : "/"}${m.url}`;
+                                navigator.clipboard.writeText(fullUrl);
                                 triggerToast("Image URL copied to clipboard!");
                               }
                             }}
@@ -4562,84 +4782,120 @@ export function AdminPanel() {
 
               {activeTab === "cms-gallery" && (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <h2 className="text-xl font-bold text-white">
-                        Clinic Photo Gallery
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Images className="h-5 w-5 text-teal-400" />
+                        <span>Clinical Gallery CMS</span>
                       </h2>
                       <p className="text-xs text-slate-400">
-                        Showcase consultation rooms, chamber facilities, and
-                        diagnostic setup
+                        Manage clinical chamber albums with multiple photos per clinic/facility
                       </p>
                     </div>
 
                     <Button
                       onClick={() => {
-                        setEditingGallery(null);
+                        setEditingGallery({
+                          title: "",
+                          category: "Main Hospital",
+                          description: "",
+                          image: "",
+                          images: [],
+                          active: true,
+                        });
                         setIsGalleryModalOpen(true);
                       }}
                       size="sm"
-                      className="bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white rounded-xl text-xs gap-1.5 font-semibold"
+                      className="bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white rounded-xl text-xs gap-1.5 font-semibold shrink-0"
                     >
                       <Plus className="h-4 w-4" />
-                      <span>Add Photo</span>
+                      <span>Add Clinic Facility Gallery</span>
                     </Button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    {galleryItems.map((item) => (
-                      <Card
-                        key={recordId(item)}
-                        className="border-slate-800 bg-slate-900/80 overflow-hidden rounded-2xl flex flex-col justify-between"
-                      >
-                        <div>
-                          <div className="aspect-video w-full overflow-hidden bg-slate-950">
-                            <img
-                              src={item.image}
-                              alt={item.alt || item.title}
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                          <div className="p-4">
-                            <h4 className="font-bold text-white text-sm">
-                              {item.title}
-                            </h4>
-                            <p className="text-xs text-slate-400 capitalize">
-                              {item.category || "Clinic"}
-                            </p>
-                          </div>
-                        </div>
+                    {galleryItems.map((item) => {
+                      const photoList: string[] = Array.isArray(item.images) && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
+                      const photoCount = photoList.length;
+                      const cover = item.image || photoList[0] || "";
 
-                        <div className="p-4 pt-0 border-t border-slate-800/80 mt-2 flex items-center justify-end gap-2">
-                          <Button
-                            onClick={() => {
-                              setEditingGallery(item);
-                              setIsGalleryModalOpen(true);
-                            }}
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs border-slate-700 bg-slate-800 text-slate-200"
-                          >
-                            <Edit className="h-3 w-3 mr-1" />
-                            <span>Edit</span>
-                          </Button>
-                          <Button
-                            onClick={() =>
-                              handleDeleteRecord(
-                                "gallery-items",
-                                recordId(item),
-                                item.title || "Photo",
-                              )
-                            }
-                            size="sm"
-                            variant="outline"
-                            className="h-7 w-7 p-0 border-slate-700 text-rose-400"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
+                      return (
+                        <Card
+                          key={recordId(item)}
+                          className="border-slate-800 bg-slate-900/80 overflow-hidden rounded-2xl flex flex-col justify-between group hover:border-teal-500/40 transition-all"
+                        >
+                          <div>
+                            <div className="aspect-video w-full overflow-hidden bg-slate-950 relative">
+                              {cover ? (
+                                <img
+                                  src={cover}
+                                  alt={item.alt || item.title}
+                                  className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center text-slate-600">
+                                  <Camera className="h-8 w-8" />
+                                </div>
+                              )}
+                              <div className="absolute top-2.5 right-2.5 flex items-center gap-1 rounded-full bg-black/70 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-teal-300 border border-slate-700">
+                                <Camera className="h-3 w-3" />
+                                <span>{photoCount} {photoCount === 1 ? "Photo" : "Photos"}</span>
+                              </div>
+                            </div>
+                            <div className="p-4 space-y-1.5">
+                              <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-teal-400">
+                                {item.category || "Clinic"}
+                              </span>
+                              <h4 className="font-bold text-white text-sm">
+                                {item.title}
+                              </h4>
+                              {item.description && (
+                                <p className="text-xs text-slate-400 line-clamp-2">
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-4 pt-0 border-t border-slate-800/80 mt-2 flex items-center justify-between gap-2">
+                            <span className="text-[10px] text-slate-500 font-medium">
+                              {photoCount} gallery assets
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <Button
+                                onClick={() => {
+                                  setEditingGallery({
+                                    ...item,
+                                    images: photoList,
+                                  });
+                                  setIsGalleryModalOpen(true);
+                                }}
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs border-slate-700 bg-slate-800 text-slate-200 gap-1 rounded-lg"
+                              >
+                                <Edit className="h-3 w-3" />
+                                <span>Edit Gallery</span>
+                              </Button>
+                              <Button
+                                onClick={() =>
+                                  handleDeleteRecord(
+                                    "gallery-items",
+                                    recordId(item),
+                                    item.title || "Facility Gallery",
+                                  )
+                                }
+                                size="sm"
+                                variant="outline"
+                                className="h-7 w-7 p-0 border-slate-700 text-rose-400 hover:bg-rose-950/30 rounded-lg"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -5357,16 +5613,24 @@ export function AdminPanel() {
         </div>
       )}
 
-      {/* 5. Add / Edit Gallery Modal */}
+      {/* 5. Add / Edit Clinic Facility Gallery Modal */}
       {isGalleryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-          <Card className="w-full max-w-md border-slate-800 bg-slate-900 p-6 rounded-2xl space-y-4 animate-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
+          <Card className="w-full max-w-xl border-slate-800 bg-slate-900 p-6 rounded-2xl space-y-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-white text-lg">
-                {Boolean(editingGallery && recordId(editingGallery))
-                  ? "Edit Photo"
-                  : "Add Gallery Photo"}
-              </h3>
+              <div>
+                <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                  <Images className="h-5 w-5 text-teal-400" />
+                  <span>
+                    {Boolean(editingGallery && recordId(editingGallery))
+                      ? "Edit Clinic Facility Gallery"
+                      : "Add Clinic Facility Gallery"}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Configure the clinic name and attach multiple photos to this facility
+                </p>
+              </div>
               <button
                 onClick={() => setIsGalleryModalOpen(false)}
                 className="text-slate-400 hover:text-white"
@@ -5385,21 +5649,30 @@ export function AdminPanel() {
                 const category =
                   (
                     form.elements.namedItem("category") as HTMLInputElement
-                  ).value.trim() || "clinic";
-                const image = editingGallery?.image || "";
+                  ).value.trim() || "Chamber";
+                const description =
+                  (
+                    form.elements.namedItem("description") as HTMLTextAreaElement
+                  )?.value.trim() || "";
 
-                if (!image) {
+                const images = (editingGallery?.images || []).filter(Boolean);
+                const primaryImage = editingGallery?.image || images[0] || "";
+
+                if (images.length === 0 && !primaryImage) {
                   triggerToast(
-                    "Please upload or provide an image for the photo",
+                    "Please upload at least one photo for this clinic",
                     true,
                   );
                   return;
                 }
 
                 if (!title) {
-                  triggerToast("Please provide a photo title", true);
+                  triggerToast("Please provide a clinic/facility title", true);
                   return;
                 }
+
+                const finalImages = images.length > 0 ? images : [primaryImage];
+                const finalCover = primaryImage || finalImages[0];
 
                 try {
                   const isEdit = Boolean(
@@ -5414,9 +5687,12 @@ export function AdminPanel() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       title,
-                      image,
+                      image: finalCover,
+                      images: finalImages,
                       alt: title,
+                      altText: title,
                       category,
+                      description,
                       active: true,
                     }),
                   });
@@ -5426,8 +5702,8 @@ export function AdminPanel() {
                   }
                   triggerToast(
                     isEdit
-                      ? "Photo updated in gallery!"
-                      : "Photo added to gallery successfully!",
+                      ? "Clinic gallery updated successfully!"
+                      : "Clinic gallery created successfully with multiple photos!",
                   );
                   setIsGalleryModalOpen(false);
                   loadAllData();
@@ -5435,39 +5711,160 @@ export function AdminPanel() {
                   triggerToast(err.message, true);
                 }
               }}
-              className="space-y-3 text-xs"
+              className="space-y-4 text-xs"
             >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">
+                    Clinic / Facility Title *
+                  </label>
+                  <Input
+                    name="title"
+                    defaultValue={editingGallery?.title || ""}
+                    placeholder="e.g. City Care Hospital Chamber"
+                    required
+                    className="border-slate-800 bg-slate-950 text-slate-200"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">
+                    Facility Category
+                  </label>
+                  <Input
+                    name="category"
+                    defaultValue={editingGallery?.category || "Main Hospital"}
+                    placeholder="Main Hospital, Chamber, Diagnostic Center..."
+                    className="border-slate-800 bg-slate-950 text-slate-200"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-slate-400 mb-1">
-                  Photo Title / Caption
+                <label className="block text-slate-300 font-medium mb-1">
+                  Facility Description & Notes
                 </label>
-                <Input
-                  name="title"
-                  defaultValue={editingGallery?.title || ""}
-                  required
-                  className="border-slate-800 bg-slate-950 text-slate-200"
+                <textarea
+                  name="description"
+                  rows={2}
+                  defaultValue={editingGallery?.description || ""}
+                  placeholder="e.g. Modern consultation suite with private examination room and diagnostic setup."
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 p-2.5 text-xs text-slate-200 focus:outline-none focus:border-teal-500"
                 />
               </div>
 
-              <div>
-                <label className="block text-slate-400 mb-1">Category</label>
-                <Input
-                  name="category"
-                  defaultValue={editingGallery?.category || "clinic"}
-                  placeholder="clinic, diagnostic, equipment..."
-                  className="border-slate-800 bg-slate-950 text-slate-200"
-                />
-              </div>
+              {/* Multi-Photo Manager Section */}
+              <div className="rounded-xl border border-slate-800/90 bg-slate-950/70 p-3.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-semibold text-slate-200 text-xs block">
+                      Clinic Photos ({(editingGallery?.images || []).length} attached)
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      Add multiple images (consultation room, waiting area, equipment, etc.)
+                    </span>
+                  </div>
+                </div>
 
-              <FileUploadInput
-                label="Gallery Image"
-                value={editingGallery?.image || ""}
-                onChange={(url) =>
-                  setEditingGallery((prev) => ({ ...(prev || {}), image: url }))
-                }
-                mediaList={mediaList}
-                placeholder="Upload photo or enter URL..."
-              />
+                {/* Upload or Choose Image to Add to Clinic Album */}
+                <div className="pt-1">
+                  <FileUploadInput
+                    label="Upload / Add Image to Clinic Album"
+                    value=""
+                    onChange={(newUrl) => {
+                      if (!newUrl) return;
+                      const currentImages = [...(editingGallery?.images || [])];
+                      if (!currentImages.includes(newUrl)) {
+                        currentImages.push(newUrl);
+                      }
+                      const currentCover = editingGallery?.image || newUrl;
+                      setEditingGallery((prev) => ({
+                        ...(prev || {}),
+                        image: currentCover,
+                        images: currentImages,
+                      }));
+                      triggerToast("Photo added to clinic album!");
+                    }}
+                    mediaList={mediaList}
+                    placeholder="Upload image or choose from library to add to this clinic..."
+                  />
+                </div>
+
+                {/* Attached Clinic Photos Grid */}
+                {(editingGallery?.images || []).length > 0 ? (
+                  <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                    <span className="text-[11px] font-medium text-slate-400 block">
+                      Current Album Photos (Hover to set cover or delete)
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto p-1">
+                      {(editingGallery?.images || []).map((imgUrl, imgIdx) => {
+                        const isCover = (editingGallery?.image === imgUrl) || (!editingGallery?.image && imgIdx === 0);
+                        return (
+                          <div
+                            key={imgIdx}
+                            className={`relative aspect-video rounded-xl overflow-hidden border bg-slate-900 group ${
+                              isCover ? "border-amber-400 ring-2 ring-amber-400/40" : "border-slate-800"
+                            }`}
+                          >
+                            <img
+                              src={imgUrl}
+                              alt={`Clinic photo ${imgIdx + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                            
+                            {/* Cover Badge */}
+                            {isCover && (
+                              <div className="absolute top-1.5 left-1.5 bg-amber-500 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-md shadow">
+                                ★ COVER
+                              </div>
+                            )}
+
+                            {/* Action Overlay */}
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
+                              {!isCover && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingGallery((prev) => ({
+                                      ...(prev || {}),
+                                      image: imgUrl,
+                                    }));
+                                    triggerToast("Cover photo updated!");
+                                  }}
+                                  className="h-6 px-1.5 bg-amber-500/90 hover:bg-amber-400 text-slate-950 text-[10px] font-bold rounded-lg"
+                                  title="Set as cover image"
+                                >
+                                  Set Cover
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = (editingGallery?.images || []).filter((_, i) => i !== imgIdx);
+                                  const newCover = editingGallery?.image === imgUrl ? (updated[0] || "") : editingGallery?.image;
+                                  setEditingGallery((prev) => ({
+                                    ...(prev || {}),
+                                    image: newCover,
+                                    images: updated,
+                                  }));
+                                }}
+                                className="h-6 w-6 grid place-items-center bg-rose-600/90 hover:bg-rose-500 text-white rounded-lg"
+                                title="Remove from clinic album"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 text-center rounded-xl border border-dashed border-slate-800 text-slate-500 text-xs">
+                    No photos added to this clinic yet. Use the upload button above to add photos.
+                  </div>
+                )}
+              </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
                 <Button
@@ -5482,7 +5879,7 @@ export function AdminPanel() {
                   type="submit"
                   className="bg-teal-600 hover:bg-teal-500 text-white font-semibold"
                 >
-                  Save Photo
+                  Save Clinic Gallery
                 </Button>
               </div>
             </form>

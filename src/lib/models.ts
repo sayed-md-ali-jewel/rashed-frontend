@@ -167,10 +167,12 @@ const TestimonialSchema = new Schema(
 const GalleryItemSchema = new Schema(
   {
     title: { type: String, required: true },
-    image: { type: String, required: true },
+    image: { type: String, default: "" },
+    images: [{ type: String }],
     alt: { type: String, default: "" },
     altText: { type: String, default: "" },
     category: { type: String, default: "clinic" },
+    description: { type: String, default: "" },
     active: { type: Boolean, default: true }
   },
   { timestamps: true }

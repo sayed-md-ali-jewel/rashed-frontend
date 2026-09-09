@@ -4,20 +4,34 @@ import { connectMongo } from "@/lib/mongodb";
 import { MediaModel } from "@/lib/models";
 
 export class MediaService {
-  private static uploadDir = path.join(process.cwd(), "public", "uploads");
+  private static getUploadDir() {
+    return path.join(process.cwd(), "public", "uploads");
+  }
+
+  private static getCandidateDirs() {
+    return [
+      path.join(process.cwd(), "public", "uploads"),
+      path.join(process.cwd(), "uploads"),
+      path.resolve(process.cwd(), "public/uploads"),
+      path.resolve(__dirname, "..", "..", "..", "public", "uploads"),
+      path.resolve(__dirname, "..", "..", "..", "..", "public", "uploads"),
+      path.resolve(__dirname, "public", "uploads")
+    ];
+  }
 
   /**
    * Save uploaded file to public/uploads and index in MongoDB.
    */
   static async uploadFile(file: File, title?: string, alt?: string) {
     await connectMongo();
-    await fs.mkdir(this.uploadDir, { recursive: true });
+    const primaryUploadDir = this.getUploadDir();
+    await fs.mkdir(primaryUploadDir, { recursive: true });
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const ext = path.extname(file.name) || ".jpg";
     const cleanBaseName = path.basename(file.name, ext).replace(/[^a-zA-Z0-9_-]/g, "_");
     const uniqueFilename = `${cleanBaseName}_${Date.now()}${ext}`;
-    const filePath = path.join(this.uploadDir, uniqueFilename);
+    const filePath = path.join(primaryUploadDir, uniqueFilename);
 
     await fs.writeFile(filePath, buffer);
 
@@ -45,13 +59,26 @@ export class MediaService {
       throw new Error("Media not found");
     }
 
-    if (media.url && media.url.startsWith("/uploads/")) {
-      const filename = path.basename(media.url);
-      const filePath = path.join(this.uploadDir, filename);
+    if (media.url) {
       try {
-        await fs.unlink(filePath);
+        const rawPath = media.url.startsWith("http")
+          ? new URL(media.url).pathname
+          : media.url;
+        const filename = path.basename(rawPath);
+
+        if (filename) {
+          const candidateDirs = this.getCandidateDirs();
+          for (const dir of candidateDirs) {
+            const filePath = path.join(dir, filename);
+            try {
+              await fs.unlink(filePath);
+            } catch {
+              // Ignore if file doesn't exist in this directory
+            }
+          }
+        }
       } catch {
-        // File may not exist on disk, ignore
+        // Ignore URL parsing or deletion error
       }
     }
 
