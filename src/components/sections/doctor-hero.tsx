@@ -2,9 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Award, Clock3, Heart, Medal, Sparkles, UsersRound } from "lucide-react";
 import type { Doctor, WebsiteSetting } from "@/lib/types";
+import { safeImageSrc } from "@/lib/utils";
 
 export function DoctorHero({ doctor, content }: { doctor: Doctor; content: WebsiteSetting["content"] }) {
   const statIcons = [UsersRound, Medal, Heart, Clock3];
+  const heroImage = safeImageSrc(doctor.image);
 
   return (
     <section id="profile" className="bg-cream py-10 sm:py-14 lg:py-20 border-b border-line">
@@ -69,10 +71,11 @@ export function DoctorHero({ doctor, content }: { doctor: Doctor; content: Websi
         <div className="relative mx-auto w-full max-w-[460px] order-1 lg:order-2 mb-6 sm:mb-8 lg:mb-0">
           <div className="relative aspect-[0.9] overflow-hidden rounded-3xl border border-line bg-white shadow-md">
             <Image
-              src={doctor.image}
-              alt={doctor.name}
+              src={heroImage}
+              alt={doctor.name || "Doctor"}
               fill
               priority
+              unoptimized
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 45vw"
             />

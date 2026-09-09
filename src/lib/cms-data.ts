@@ -28,7 +28,9 @@ export type LandingPageData = {
 };
 
 function asString(value: unknown, fallback = ""): string {
-  return typeof value === "string" && value.length > 0 ? value : fallback;
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : fallback;
 }
 
 function asNumber(value: unknown, fallback = 0) {

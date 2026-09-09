@@ -56,3 +56,49 @@ export function formatCurrency(value: number, currency = "BDT") {
     maximumFractionDigits: 0
   }).format(value);
 }
+
+export function cleanRelativeUrl(val?: string | null): string {
+  if (!val || typeof val !== "string") return "";
+  const clean = val.trim();
+  const uploadsIdx = clean.indexOf("/uploads/");
+  if (uploadsIdx !== -1) {
+    return clean.slice(uploadsIdx);
+  }
+  if (clean.startsWith("uploads/")) {
+    return `/${clean}`;
+  }
+  return clean;
+}
+
+export function safeImageSrc(
+  src?: string | null,
+  fallback = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=1200&q=80"
+): string {
+  if (!src || typeof src !== "string" || !src.trim()) {
+    return fallback;
+  }
+  const clean = src.trim();
+
+  // If the URL has a hardcoded base URL (e.g. http://localhost:3000/uploads/... or https://drrashed.bd/uploads/...)
+  // strip the domain and keep "/uploads/..." so it loads seamlessly anywhere
+  const uploadsIndex = clean.indexOf("/uploads/");
+  if (uploadsIndex !== -1) {
+    return clean.slice(uploadsIndex);
+  }
+
+  // If it's a relative path like "uploads/xyz.jpg"
+  if (clean.startsWith("uploads/")) {
+    return `/${clean}`;
+  }
+
+  if (
+    clean.startsWith("http://") ||
+    clean.startsWith("https://") ||
+    clean.startsWith("data:") ||
+    clean.startsWith("/")
+  ) {
+    return clean;
+  }
+  return `/${clean}`;
+}
+

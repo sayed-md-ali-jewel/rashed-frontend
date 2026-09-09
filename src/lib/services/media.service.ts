@@ -91,6 +91,16 @@ export class MediaService {
    */
   static async listMedia() {
     await connectMongo();
-    return MediaModel.find().sort({ createdAt: -1 }).lean();
+    const list = await MediaModel.find().sort({ createdAt: -1 }).lean();
+    return list.map((item: any) => {
+      let url = String(item.url || "");
+      const idx = url.indexOf("/uploads/");
+      if (idx !== -1) {
+        url = url.slice(idx);
+      } else if (url && !url.startsWith("http") && !url.startsWith("/")) {
+        url = `/${url}`;
+      }
+      return { ...item, url };
+    });
   }
 }

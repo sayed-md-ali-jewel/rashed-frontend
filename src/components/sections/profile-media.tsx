@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Building2, Camera, ChevronLeft, ChevronRight, Images, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GalleryItem, Testimonial } from "@/lib/types";
+import { safeImageSrc } from "@/lib/utils";
 
 export function TestimonialSlider({ testimonials }: { testimonials: Testimonial[] }) {
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -122,7 +123,7 @@ export function GalleryStrip({ gallery }: { gallery: GalleryItem[] }) {
         {gallery.map((item, index) => {
           const images = Array.isArray(item.images) && item.images.length > 0 ? item.images : [item.image].filter(Boolean);
           const photoCount = images.length;
-          const coverImage = item.image || images[0] || "";
+          const coverImage = safeImageSrc(item.image || images[0], "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80");
 
           return (
             <button
@@ -136,9 +137,10 @@ export function GalleryStrip({ gallery }: { gallery: GalleryItem[] }) {
                   {coverImage ? (
                     <Image
                       src={coverImage}
-                      alt={item.alt || item.title}
+                      alt={item.alt || item.title || "Facility"}
                       width={620}
                       height={420}
+                      unoptimized
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
@@ -220,9 +222,10 @@ export function GalleryStrip({ gallery }: { gallery: GalleryItem[] }) {
               {activeImage ? (
                 <div className="relative h-full w-full">
                   <Image
-                    src={activeImage}
-                    alt={activeClinic.alt || activeClinic.title}
+                    src={safeImageSrc(activeImage, "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80")}
+                    alt={activeClinic.alt || activeClinic.title || "Clinic image"}
                     fill
+                    unoptimized
                     className="object-contain"
                     priority
                   />
@@ -275,9 +278,10 @@ export function GalleryStrip({ gallery }: { gallery: GalleryItem[] }) {
                       }`}
                     >
                       <Image
-                        src={img}
+                        src={safeImageSrc(img, "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80")}
                         alt={`Thumbnail ${idx + 1}`}
                         fill
+                        unoptimized
                         className="object-cover"
                       />
                     </button>

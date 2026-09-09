@@ -80,6 +80,7 @@ import {
   SweetAlertModal,
   type SweetAlertConfig,
 } from "@/components/ui/sweet-alert";
+import { safeImageSrc } from "@/lib/utils";
 
 function toLocalDatetimeInput(dateStr?: string | Date) {
   if (!dateStr) return "";

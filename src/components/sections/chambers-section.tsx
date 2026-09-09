@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Building2, Calendar, Clock, ExternalLink, MapPin, Phone } from "lucide-react";
 import type { Hospital, WebsiteSetting } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, safeImageSrc } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -71,9 +71,12 @@ export function ChambersSection({
                   <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100 border-b border-line">
                     {hospital.image ? (
                       <img
-                        src={hospital.image}
+                        src={safeImageSrc(hospital.image, "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80")}
                         alt={hospital.name}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80";
+                        }}
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue/5 via-sky-50 to-slate-100 text-muted">

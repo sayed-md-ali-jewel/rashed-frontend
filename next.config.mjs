@@ -1,16 +1,11 @@
 const nextConfig = {
   output: "standalone",
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "http",
-        hostname: "localhost",
-        port: "1337"
-      },
-      {
-        protocol: "http",
-        hostname: "127.0.0.1",
-        port: "1337"
+        hostname: "**"
       },
       {
         protocol: "https",

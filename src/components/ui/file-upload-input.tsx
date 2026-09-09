@@ -4,6 +4,8 @@ import React, { useRef, useState } from "react";
 import { Check, Copy, FileText, Image as ImageIcon, Loader2, Trash2, UploadCloud, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cleanRelativeUrl, safeImageSrc } from "@/lib/utils";
+
 
 export type MediaAsset = {
   _id?: string;
@@ -60,10 +62,10 @@ export function FileUploadInput({
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to upload file");
 
-      const uploadedUrl = json.data?.url || "";
+      const uploadedUrl = cleanRelativeUrl(json.data?.url || "");
       onChange(uploadedUrl);
       if (onUploadSuccess && json.data) {
-        onUploadSuccess(json.data);
+        onUploadSuccess({ ...json.data, url: uploadedUrl });
       }
     } catch (err: any) {
       setError(err.message || "Upload error");
@@ -75,11 +77,12 @@ export function FileUploadInput({
 
   const handleCopyUrl = () => {
     if (!value) return;
-    const fullUrl = value.startsWith("http")
-      ? value
+    const cleanUrl = cleanRelativeUrl(value);
+    const fullUrl = cleanUrl.startsWith("http")
+      ? cleanUrl
       : typeof window !== "undefined"
-      ? `${window.location.origin}${value.startsWith("/") ? "" : "/"}${value}`
-      : value;
+      ? `${window.location.origin}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`
+      : cleanUrl;
     navigator.clipboard.writeText(fullUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -111,7 +114,7 @@ export function FileUploadInput({
         <div className="relative flex-1">
           <Input
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => onChange(cleanRelativeUrl(e.target.value))}
             placeholder={placeholder}
             className="border-slate-800 bg-slate-950 pr-8 text-xs text-slate-200 placeholder:text-slate-500 focus:border-teal-500 rounded-xl"
           />
@@ -164,7 +167,7 @@ export function FileUploadInput({
           <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-900 border border-slate-800">
             {isImage ? (
               <img
-                src={value}
+                src={safeImageSrc(value)}
                 alt="Preview"
                 className="h-full w-full object-cover"
                 onError={(e) => {
@@ -227,7 +230,7 @@ export function FileUploadInput({
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-96 overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-800">
               {mediaList.map((asset) => {
-                const assetUrl = asset.url || "";
+                const assetUrl = cleanRelativeUrl(asset.url || "");
                 const isSelected = value === assetUrl;
                 return (
                   <button
@@ -244,7 +247,7 @@ export function FileUploadInput({
                     }`}
                   >
                     <img
-                      src={assetUrl}
+                      src={safeImageSrc(assetUrl)}
                       alt={asset.alt || asset.title || "Media"}
                       className="h-full w-full object-cover rounded-lg group-hover:scale-105 transition-transform"
                     />
