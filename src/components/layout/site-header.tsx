@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { WebsiteSetting } from "@/lib/types";
+import { safeImageSrc } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -60,9 +61,12 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
           >
             {setting.logo ? (
               <img
-                src={setting.logo}
+                src={safeImageSrc(setting.logo)}
                 alt={setting.siteName || "Dr. Rashed"}
                 className="h-10 w-auto max-w-[180px] object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
               />
             ) : (
               <>

@@ -2517,9 +2517,12 @@ export function AdminPanel() {
                           {hosp.image && (
                             <div className="mt-2 aspect-video w-full overflow-hidden rounded-xl border border-slate-800">
                               <img
-                                src={hosp.image}
+                                src={safeImageSrc(hosp.image)}
                                 alt={hosp.name}
                                 className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
                               />
                             </div>
                           )}
@@ -4314,9 +4317,12 @@ export function AdminPanel() {
                           <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 max-w-xs shadow-inner">
                             {websiteSettings.favicon ? (
                               <img
-                                src={websiteSettings.favicon}
+                                src={safeImageSrc(websiteSettings.favicon)}
                                 alt="Favicon"
                                 className="h-4 w-4 rounded-xs object-contain"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
                               />
                             ) : (
                               <div className="h-4 w-4 rounded-xs bg-blue-600 flex items-center justify-center text-[10px] text-white font-black">
@@ -4339,9 +4345,12 @@ export function AdminPanel() {
                             <div className="flex items-center gap-2.5">
                               {websiteSettings.logo ? (
                                 <img
-                                  src={websiteSettings.logo}
+                                  src={safeImageSrc(websiteSettings.logo)}
                                   alt="Brand Logo"
                                   className="h-8 w-auto max-w-[140px] object-contain"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
                                 />
                               ) : (
                                 <div className="flex items-center gap-2">
@@ -4617,9 +4626,12 @@ export function AdminPanel() {
                           {post.coverImage && (
                             <div className="aspect-video w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
                               <img
-                                src={post.coverImage}
+                                src={safeImageSrc(post.coverImage)}
                                 alt={post.title}
                                 className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
                               />
                             </div>
                           )}
@@ -5791,9 +5803,12 @@ export function AdminPanel() {
                           {srv.image && (
                             <div className="aspect-video w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800 mb-2">
                               <img
-                                src={srv.image}
+                                src={safeImageSrc(srv.image)}
                                 alt={srv.name}
                                 className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
                               />
                             </div>
                           )}
@@ -6051,9 +6066,12 @@ export function AdminPanel() {
                             <div className="aspect-video w-full overflow-hidden bg-slate-950 relative">
                               {cover ? (
                                 <img
-                                  src={cover}
+                                  src={safeImageSrc(cover)}
                                   alt={item.alt || item.title}
                                   className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
                                 />
                               ) : (
                                 <div className="h-full w-full flex items-center justify-center text-slate-600">
@@ -6886,9 +6904,12 @@ export function AdminPanel() {
                             }`}
                           >
                             <img
-                              src={imgUrl}
+                              src={safeImageSrc(imgUrl)}
                               alt={`Clinic photo ${imgIdx + 1}`}
                               className="h-full w-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
                             />
                             
                             {/* Cover Badge */}

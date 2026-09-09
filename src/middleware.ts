@@ -1,5 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+function getOrigin(request: NextRequest): string {
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const host = forwardedHost
+    ? forwardedHost.split(",")[0].trim()
+    : request.headers.get("host") || request.nextUrl.host;
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const proto = forwardedProto
+    ? forwardedProto.split(",")[0].trim()
+    : request.nextUrl.protocol.replace(":", "") || "https";
+
+  return `${proto}://${host}`;
+}
+
+function createRedirect(request: NextRequest, targetPath: string, nextParam?: string) {
+  const origin = getOrigin(request);
+  const redirectUrl = new URL(targetPath, origin);
+  if (nextParam) {
+    redirectUrl.searchParams.set("next", nextParam);
+  }
+  return NextResponse.redirect(redirectUrl);
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAdminRoute = pathname.startsWith("/admin");
@@ -16,16 +38,11 @@ export function middleware(request: NextRequest) {
     }
 
     if (!hasAdminSession && !isAdminLogin) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/admin/login";
-      url.searchParams.set("next", pathname);
-      return NextResponse.redirect(url);
+      return createRedirect(request, "/admin/login", pathname);
     }
 
     if (hasAdminSession && isAdminLogin) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/admin";
-      return NextResponse.redirect(url);
+      return createRedirect(request, "/admin");
     }
   }
 
@@ -33,16 +50,11 @@ export function middleware(request: NextRequest) {
     const hasPatientSession = Boolean(request.cookies.get("patient_session")?.value);
 
     if (!hasPatientSession && !isPatientLogin) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/patient/login";
-      url.searchParams.set("next", pathname);
-      return NextResponse.redirect(url);
+      return createRedirect(request, "/patient/login", pathname);
     }
 
     if (hasPatientSession && isPatientLogin) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/patient";
-      return NextResponse.redirect(url);
+      return createRedirect(request, "/patient");
     }
   }
 
@@ -52,3 +64,4 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/admin/:path*", "/api/admin/:path*", "/patient/:path*"]
 };
+

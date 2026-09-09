@@ -14,6 +14,7 @@ import {
   Youtube,
 } from "lucide-react";
 import type { WebsiteSetting } from "@/lib/types";
+import { safeImageSrc } from "@/lib/utils";
 
 const links = [
   { label: "Home", href: "/" },
@@ -46,11 +47,15 @@ export function SiteFooter({ setting }: { setting: WebsiteSetting }) {
             <div className="flex items-center gap-3">
               {setting.logoDark || setting.logo ? (
                 <img
-                  src={setting.logoDark || setting.logo}
+                  src={safeImageSrc(setting.logoDark || setting.logo)}
                   alt={setting.siteName || "Dr. Rashed"}
                   className="h-10 w-auto max-w-[190px] object-contain brightness-105"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
                 />
               ) : (
+
                 <>
                   <span className="grid size-11 place-items-center rounded-xl bg-blue text-white font-black text-xl shadow-sm">
                     R
