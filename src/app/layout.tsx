@@ -5,6 +5,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { FloatingBookButton } from "@/components/layout/floating-book-button";
+import { ChunkErrorHandler } from "@/components/layout/chunk-error-handler";
 import { getWebsiteSetting } from "@/lib/cms-data";
 
 const poppins = Poppins({
@@ -56,6 +57,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                // Clear obsolete service workers and caches
                 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
                   navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     for (var i = 0; i < registrations.length; i++) {
@@ -70,12 +72,48 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                     });
                   }
                 }
+
+                // Global Early ChunkLoadError Interceptor
+                function isChunkErr(err) {
+                  if (!err) return false;
+                  var msg = (typeof err === 'string' ? err : '') || err.message || err.name || '';
+                  return msg.indexOf('ChunkLoadError') !== -1 ||
+                         msg.indexOf('Loading chunk') !== -1 ||
+                         msg.indexOf('Failed to fetch dynamically imported module') !== -1 ||
+                         msg.indexOf('CSS chunk load failed') !== -1;
+                }
+
+                function reloadOnChunkError() {
+                  try {
+                    var lastReload = parseInt(sessionStorage.getItem('chunk_early_reload') || '0', 10);
+                    var now = Date.now();
+                    if (now - lastReload > 12000) {
+                      sessionStorage.setItem('chunk_early_reload', now.toString());
+                      window.location.reload();
+                    }
+                  } catch(e) {
+                    window.location.reload();
+                  }
+                }
+
+                window.addEventListener('error', function(e) {
+                  if (isChunkErr(e.error) || isChunkErr(e.message)) {
+                    reloadOnChunkError();
+                  }
+                });
+
+                window.addEventListener('unhandledrejection', function(e) {
+                  if (isChunkErr(e.reason)) {
+                    reloadOnChunkError();
+                  }
+                });
               })();
             `
           }}
         />
       </head>
       <body className="font-sans antialiased bg-white text-[#141414] selection:bg-[#ffc200] selection:text-[#141414]">
+        <ChunkErrorHandler />
         <SiteHeader setting={setting} />
         <div className="min-h-screen">{children}</div>
         <FloatingBookButton />

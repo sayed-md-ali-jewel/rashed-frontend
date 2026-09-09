@@ -28,8 +28,26 @@ function tryServeUpload(req, res) {
   if (!req.url || !req.url.startsWith('/uploads/')) return false;
 
   const urlPath = req.url.split('?')[0];
-  const filename = path.basename(urlPath);
-  if (!filename || filename.includes('..')) return false;
+  let rawFilename = urlPath.slice('/uploads/'.length);
+  if (!rawFilename || rawFilename.includes('..')) return false;
+
+  let decodedFilename = rawFilename;
+  try {
+    decodedFilename = decodeURIComponent(rawFilename);
+  } catch (e) {
+    // Keep raw
+  }
+
+  if (decodedFilename.includes('..') || decodedFilename.includes('\\')) return false;
+
+  const filenameVariants = new Set([
+    rawFilename,
+    decodedFilename,
+    path.basename(rawFilename),
+    path.basename(decodedFilename),
+    path.basename(decodedFilename).replace(/ /g, '_'),
+    path.basename(decodedFilename).replace(/_/g, ' ')
+  ]);
 
   const candidateDirs = [
     path.join(process.cwd(), 'public', 'uploads'),
@@ -43,24 +61,26 @@ function tryServeUpload(req, res) {
   ];
 
   for (const dir of candidateDirs) {
-    const filePath = path.join(dir, filename);
-    if (fs.existsSync(filePath)) {
-      try {
-        const stat = fs.statSync(filePath);
-        if (stat.isFile()) {
-          const ext = path.extname(filename).toLowerCase();
-          const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-          res.writeHead(200, {
-            'Content-Type': contentType,
-            'Content-Length': stat.size,
-            'Cache-Control': 'public, max-age=31536000, immutable',
-            'Accept-Ranges': 'bytes'
-          });
-          fs.createReadStream(filePath).pipe(res);
-          return true;
+    for (const filename of filenameVariants) {
+      const filePath = path.join(dir, filename);
+      if (fs.existsSync(filePath)) {
+        try {
+          const stat = fs.statSync(filePath);
+          if (stat.isFile()) {
+            const ext = path.extname(filename).toLowerCase();
+            const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+            res.writeHead(200, {
+              'Content-Type': contentType,
+              'Content-Length': stat.size,
+              'Cache-Control': 'public, max-age=31536000, immutable',
+              'Accept-Ranges': 'bytes'
+            });
+            fs.createReadStream(filePath).pipe(res);
+            return true;
+          }
+        } catch {
+          // Fall back to Next.js route handler
         }
-      } catch {
-        // Fall back to Next.js route handler
       }
     }
   }

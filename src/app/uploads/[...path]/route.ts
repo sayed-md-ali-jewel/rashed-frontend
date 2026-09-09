@@ -31,19 +31,38 @@ function getMimeType(filename: string): string {
 }
 
 function resolveUploadPath(pathSegments: string[]): string | null {
+  if (!pathSegments || pathSegments.length === 0) {
+    return null;
+  }
+
   // Prevent directory traversal attacks
-  const sanitizedSegments = pathSegments
-    .map((seg) => seg.replace(/[^a-zA-Z0-9._-]/g, ""))
-    .filter(Boolean);
+  const rawJoined = pathSegments.join("/");
+  let decoded = rawJoined;
+  try {
+    decoded = decodeURIComponent(rawJoined);
+  } catch {
+    // Keep rawJoined if decode fails
+  }
 
   if (
-    sanitizedSegments.length === 0 ||
-    sanitizedSegments.some((s) => s.includes(".."))
+    decoded.includes("..") ||
+    rawJoined.includes("..") ||
+    decoded.includes("\\") ||
+    rawJoined.includes("\\")
   ) {
     return null;
   }
 
-  const relativeSubPath = path.join(...sanitizedSegments);
+  // Generate candidate filename variations
+  const variants = new Set<string>();
+  variants.add(decoded);
+  variants.add(rawJoined);
+  variants.add(decoded.replace(/ /g, "_"));
+  variants.add(decoded.replace(/_/g, " "));
+  variants.add(path.basename(decoded));
+  variants.add(path.basename(rawJoined));
+  variants.add(path.basename(decoded).replace(/ /g, "_"));
+  variants.add(path.basename(decoded).replace(/_/g, " "));
 
   // Search candidate root directories where uploads might be located in dev or production
   const candidateDirs = [
@@ -66,9 +85,11 @@ function resolveUploadPath(pathSegments: string[]): string | null {
   ];
 
   for (const dir of candidateDirs) {
-    const fullPath = path.join(dir, relativeSubPath);
-    if (existsSync(fullPath)) {
-      return fullPath;
+    for (const variant of variants) {
+      const fullPath = path.join(dir, variant);
+      if (existsSync(fullPath)) {
+        return fullPath;
+      }
     }
   }
 
