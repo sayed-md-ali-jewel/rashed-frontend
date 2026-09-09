@@ -76,21 +76,33 @@ export function cleanRelativeUrl(val?: string | null): string {
 export function getServerBaseUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
 
-  if (envUrl && typeof envUrl === "string") {
+  if (
+    envUrl &&
+    typeof envUrl === "string" &&
+    !envUrl.includes("localhost") &&
+    !envUrl.includes("127.0.0.1")
+  ) {
     return envUrl.trim().replace(/\/$/, "");
   }
 
   if (typeof window !== "undefined" && window.location?.origin) {
-    return window.location.origin.replace(/\/$/, "");
+    const origin = window.location.origin;
+    if (!origin.includes("localhost") && !origin.includes("127.0.0.1")) {
+      return origin.replace(/\/$/, "");
+    }
   }
 
-  return "";
+  if (process.env.NODE_ENV === "development") {
+    return "http://localhost:3000";
+  }
+
+  return "https://drrashed.bd";
 }
 
 /**
  * Connects the server / upload folder before the image relative path stored in MongoDB.
  * MongoDB stores: "/uploads/WhatsApp_Image_2026-09-09_at_8_58_39_AM_1788922800441.jpeg"
- * Result: "https://drrashed.bd/uploads/WhatsApp_Image_2026-09-09_at_8_58_39_AM_1788922800441.jpeg"
+ * Result: "/uploads/WhatsApp_Image_2026-09-09_at_8_58_39_AM_1788922800441.jpeg" (root-relative for client)
  */
 export function connectServerUploadUrl(src?: string | null): string {
   if (!src || typeof src !== "string" || !src.trim()) {
@@ -123,16 +135,6 @@ export function connectServerUploadUrl(src?: string | null): string {
     relativeUploadPath = clean.startsWith("/uploads/") ? clean : `/uploads${clean}`;
   } else {
     relativeUploadPath = `/uploads/${clean}`;
-  }
-
-  // Connect server base URL
-  const serverBase = getServerBaseUrl();
-  if (serverBase) {
-    // Avoid double /uploads if serverBase already ends with /uploads
-    if (serverBase.endsWith("/uploads") && relativeUploadPath.startsWith("/uploads/")) {
-      return `${serverBase}${relativeUploadPath.slice(8)}`;
-    }
-    return `${serverBase}${relativeUploadPath}`;
   }
 
   return relativeUploadPath;

@@ -37,7 +37,7 @@ function getOrigin(request: NextRequest): string {
     }
   }
 
-  // 4. Explicit environment variable if configured and not localhost
+  // 4. Explicit environment variable if configured with a real domain
   const envUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
@@ -46,21 +46,13 @@ function getOrigin(request: NextRequest): string {
     return envUrl.replace(/\/$/, "");
   }
 
-  // 5. If the connection was HTTPS or in production, always resolve to the production domain
-  const proto = (
-    request.headers.get("x-forwarded-proto") ||
-    request.nextUrl.protocol ||
-    ""
-  ).replace(":", "");
-  if (proto === "https" || process.env.NODE_ENV === "production") {
-    return "https://drrashed.bd";
+  // 5. Development mode: ONLY allow localhost when explicitly running local dev
+  if (process.env.NODE_ENV === "development") {
+    const devHost = host || "localhost:3000";
+    return `http://${devHost}`;
   }
 
-  // 6. Local development fallback only when on HTTP localhost
-  if (host?.includes("localhost") || host?.includes("127.0.0.1")) {
-    return `http://${host}`;
-  }
-
+  // 6. In all other scenarios (production, cPanel, PM2, Passenger, Nginx proxy), ALWAYS return the production domain
   return "https://drrashed.bd";
 }
 
