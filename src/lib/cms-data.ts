@@ -1,9 +1,10 @@
-import { gallery, doctor, schedules, testimonials, websiteSetting } from "./mock-data";
+import { gallery, doctor, mockHospitals, schedules, testimonials, websiteSetting } from "./mock-data";
 import { connectMongo, hasMongoUri } from "./mongodb";
 import {
   AppointmentModel,
   DoctorModel,
   GalleryItemModel,
+  HospitalModel,
   ScheduleModel,
   ServiceModel,
   TestimonialModel,
@@ -20,6 +21,7 @@ type MongoDocument = {
 export type LandingPageData = {
   doctor: Doctor;
   schedules: Schedule[];
+  hospitals: Hospital[];
   testimonials: Testimonial[];
   gallery: GalleryItem[];
   websiteSetting: WebsiteSetting;
@@ -154,15 +156,22 @@ function mapDoctor(item: MongoDocument | null, serviceItems: MongoDocument[] = [
 
 function mapHospital(value: unknown): Hospital {
   const item = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
-  const name = asString(item.name, "Clinic");
-  const address = asString(item.address, "Address coming soon");
+  const name = asString(item.name, "Chamber Location");
+  const address = asString(item.address, "Chamber address coming soon");
   const rawMapUrl = asString(item.mapUrl, asString(item.embeddedMapUrl, asString(item.googleMapsUrl)));
   const mapUrl =
     rawMapUrl && rawMapUrl.includes("output=embed")
       ? rawMapUrl
       : `https://www.google.com/maps?q=${encodeURIComponent(address || name)}&output=embed`;
 
+  const rawVisitingDays = item.visitingDays;
+  const visitingDays = Array.isArray(rawVisitingDays) && rawVisitingDays.length > 0
+    ? asStringArray(rawVisitingDays, [])
+    : (typeof rawVisitingDays === "string" && rawVisitingDays ? [rawVisitingDays] : ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"]);
+
   return {
+    _id: item._id ? String(item._id) : undefined,
+    id: item._id ? String(item._id) : (item.id ? String(item.id) : undefined),
     name,
     address,
     phone: asString(item.phone, undefined),
@@ -170,7 +179,9 @@ function mapHospital(value: unknown): Hospital {
     latitude: asNumber(item.latitude, 23.8103),
     longitude: asNumber(item.longitude, 90.4125),
     image: asString(item.image),
-    consultationFee: asNumber(item.consultationFee),
+    consultationFee: asNumber(item.consultationFee, 1000),
+    visitingDays,
+    visitingHours: asString(item.visitingHours, "05:00 PM - 09:00 PM"),
     active: typeof item.active === "boolean" ? item.active : true
   };
 }
@@ -295,16 +306,19 @@ export async function getLandingPageData(): Promise<LandingPageData> {
   const upcomingFallbackSchedules = schedules.filter(isUpcomingSchedule);
 
   if (!hasMongoUri()) {
-    return { doctor, schedules: upcomingFallbackSchedules, testimonials, gallery, websiteSetting };
+    return { doctor, schedules: upcomingFallbackSchedules, hospitals: mockHospitals, testimonials, gallery, websiteSetting };
   }
 
   try {
     await connectMongo();
 
-    const [doctorItem, scheduleItems, testimonialItems, galleryItems, websiteSettingItem, serviceItems] = await Promise.all([
+    const [doctorItem, scheduleItems, hospitalItems, testimonialItems, galleryItems, websiteSettingItem, serviceItems] = await Promise.all([
       DoctorModel.findOne().sort({ updatedAt: -1 }).lean<MongoDocument | null>(),
       ScheduleModel.find({ scheduleStatus: { $ne: "cancelled" } })
         .sort({ startsAt: 1 })
+        .lean<MongoDocument[]>(),
+      HospitalModel.find({ active: { $ne: false } })
+        .sort({ createdAt: 1 })
         .lean<MongoDocument[]>(),
       TestimonialModel.find({ active: { $ne: false } })
         .sort({ createdAt: -1 })
@@ -319,15 +333,22 @@ export async function getLandingPageData(): Promise<LandingPageData> {
     const mappedSchedules = scheduleItems.map((item) => mapSchedule(item)).filter(isUpcomingSchedule);
     const bookedSlots = await getBookedSlots(mappedSchedules.map((item) => item.id));
 
+    const mappedHospitals = Array.isArray(hospitalItems) && hospitalItems.length > 0
+      ? hospitalItems.map(mapHospital)
+      : mappedSchedules.length > 0
+        ? Array.from(new Map(mappedSchedules.map((s) => [s.hospital.name, s.hospital])).values())
+        : mockHospitals;
+
     return {
       doctor: mapDoctor(doctorItem, serviceItems),
       schedules: mappedSchedules.map((item) => ({ ...item, bookedSlots: bookedSlots[item.id] ?? [] })),
+      hospitals: mappedHospitals,
       testimonials: testimonialItems.length > 0 ? testimonialItems.map(mapTestimonial) : testimonials,
       gallery: galleryItems.length > 0 ? galleryItems.map(mapGalleryItem) : gallery,
       websiteSetting: mapWebsiteSetting(websiteSettingItem)
     };
   } catch {
-    return { doctor, schedules: upcomingFallbackSchedules, testimonials, gallery, websiteSetting };
+    return { doctor, schedules: upcomingFallbackSchedules, hospitals: mockHospitals, testimonials, gallery, websiteSetting };
   }
 }
 

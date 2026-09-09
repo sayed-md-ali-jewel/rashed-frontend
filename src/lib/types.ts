@@ -66,6 +66,8 @@ export type Doctor = {
 };
 
 export type Hospital = {
+  _id?: string;
+  id?: string;
   name: string;
   address: string;
   phone?: string;
@@ -74,6 +76,8 @@ export type Hospital = {
   longitude: number;
   image?: string;
   consultationFee?: number;
+  visitingDays?: string[];
+  visitingHours?: string;
   active?: boolean;
 };
 

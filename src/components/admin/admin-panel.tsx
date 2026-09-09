@@ -171,6 +171,8 @@ type HospitalRecord = {
   latitude?: number;
   longitude?: number;
   image?: string;
+  visitingDays?: string[];
+  visitingHours?: string;
   active?: boolean;
   createdAt?: string;
 };
@@ -317,6 +319,382 @@ type MediaRecord = MediaAsset;
 function recordId(record?: { _id?: string; id?: string } | null | any): string {
   if (!record || typeof record !== "object") return "";
   return String(record._id ?? record.id ?? "");
+}
+
+const ALL_WEEK_DAYS = [
+  "Saturday",
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+];
+
+const VISITING_HOUR_PRESETS = [
+  "05:00 PM - 09:00 PM",
+  "06:00 PM - 10:00 PM",
+  "10:00 AM - 01:00 PM",
+  "09:00 AM - 01:00 PM & 05:00 PM - 09:00 PM",
+  "04:00 PM - 08:00 PM",
+  "07:00 PM - 11:00 PM",
+];
+
+function HospitalModalDialog({
+  isOpen,
+  onClose,
+  editingHospital,
+  mediaList,
+  onSaved,
+  triggerToast,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  editingHospital: HospitalRecord | null;
+  mediaList: MediaAsset[];
+  onSaved: () => void;
+  triggerToast: (msg: string, isError?: boolean) => void;
+}) {
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [visitingHours, setVisitingHours] = useState<string>("");
+  const [image, setImage] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (editingHospital) {
+      const days =
+        Array.isArray(editingHospital.visitingDays) &&
+        editingHospital.visitingDays.length > 0
+          ? editingHospital.visitingDays
+          : ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
+      setSelectedDays(days);
+      setVisitingHours(editingHospital.visitingHours || "05:00 PM - 09:00 PM");
+      setImage(editingHospital.image || "");
+    } else {
+      setSelectedDays([
+        "Saturday",
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+      ]);
+      setVisitingHours("05:00 PM - 09:00 PM");
+      setImage("");
+    }
+  }, [editingHospital, isOpen]);
+
+  if (!isOpen) return null;
+
+  const toggleDay = (day: string) => {
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
+    );
+  };
+
+  const selectAllDays = () => setSelectedDays([...ALL_WEEK_DAYS]);
+  const selectSatThu = () =>
+    setSelectedDays([
+      "Saturday",
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+    ]);
+  const selectMonFri = () =>
+    setSelectedDays([
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+    ]);
+  const clearDays = () => setSelectedDays([]);
+
+  const isEdit = Boolean(editingHospital && recordId(editingHospital));
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const form = e.currentTarget;
+    const name = (form.elements.namedItem("name") as HTMLInputElement).value;
+    const address = (form.elements.namedItem("address") as HTMLInputElement).value;
+    const phone = (form.elements.namedItem("phone") as HTMLInputElement).value;
+    const consultationFee =
+      Number(
+        (form.elements.namedItem("consultationFee") as HTMLInputElement).value,
+      ) || 1000;
+    const embeddedMapUrl = (
+      form.elements.namedItem("embeddedMapUrl") as HTMLInputElement
+    ).value;
+
+    try {
+      const url = isEdit
+        ? `/api/admin/hospitals/${recordId(editingHospital)}`
+        : "/api/admin/hospitals";
+      const method = isEdit ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          address,
+          phone,
+          consultationFee,
+          embeddedMapUrl,
+          image,
+          visitingDays: selectedDays,
+          visitingHours,
+          active: true,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Operation failed");
+      }
+
+      triggerToast(
+        isEdit
+          ? "Hospital updated successfully!"
+          : "Hospital added successfully!",
+      );
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      triggerToast(err.message, true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+      <Card className="w-full max-w-lg border-slate-800 bg-slate-900 p-6 rounded-2xl space-y-4 animate-in zoom-in-95 max-h-[92vh] overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="font-bold text-white text-lg">
+              {isEdit ? "Edit Hospital & Chamber" : "Add New Hospital"}
+            </h3>
+            <p className="text-xs text-slate-400">
+              Configure chamber name, address, visiting schedule & hours
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-slate-400 hover:text-white rounded-lg p-1 hover:bg-slate-800"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <div>
+            <label className="block text-slate-300 font-medium mb-1">
+              Hospital / Chamber Name <span className="text-rose-400">*</span>
+            </label>
+            <Input
+              name="name"
+              defaultValue={editingHospital?.name || ""}
+              placeholder="e.g. City Care Hospital"
+              required
+              className="border-slate-800 bg-slate-950 text-slate-200"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-medium mb-1">
+              Full Address <span className="text-rose-400">*</span>
+            </label>
+            <Input
+              name="address"
+              defaultValue={editingHospital?.address || ""}
+              placeholder="e.g. House 12, Road 8, Dhanmondi, Dhaka"
+              required
+              className="border-slate-800 bg-slate-950 text-slate-200"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">
+                Phone Number
+              </label>
+              <Input
+                name="phone"
+                defaultValue={editingHospital?.phone || ""}
+                placeholder="+8801700000000"
+                className="border-slate-800 bg-slate-950 text-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">
+                Consultation Fee (৳)
+              </label>
+              <Input
+                name="consultationFee"
+                type="number"
+                defaultValue={editingHospital?.consultationFee || 1000}
+                className="border-slate-800 bg-slate-950 text-slate-200"
+              />
+            </div>
+          </div>
+
+          {/* Visiting Days Multi-Select */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-teal-400" />
+                <span>Visiting Days (Multiple Select)</span>
+              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={selectAllDays}
+                  className="rounded px-1.5 py-0.5 text-[10px] text-teal-400 bg-teal-950/50 hover:bg-teal-900/60 border border-teal-800/40 font-medium"
+                >
+                  All Days
+                </button>
+                <button
+                  type="button"
+                  onClick={selectSatThu}
+                  className="rounded px-1.5 py-0.5 text-[10px] text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium"
+                >
+                  Sat-Thu
+                </button>
+                <button
+                  type="button"
+                  onClick={selectMonFri}
+                  className="rounded px-1.5 py-0.5 text-[10px] text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium"
+                >
+                  Mon-Fri
+                </button>
+                <button
+                  type="button"
+                  onClick={clearDays}
+                  className="rounded px-1.5 py-0.5 text-[10px] text-rose-400 bg-rose-950/50 hover:bg-rose-900/60 border border-rose-800/40 font-medium"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            {/* Days toggle buttons */}
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+              {ALL_WEEK_DAYS.map((day) => {
+                const isSelected = selectedDays.includes(day);
+                const shortDay = day.slice(0, 3);
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleDay(day)}
+                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg border text-xs font-medium transition-all ${
+                      isSelected
+                        ? "bg-teal-500/20 border-teal-500/70 text-teal-300 shadow-sm shadow-teal-950"
+                        : "bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                    }`}
+                  >
+                    <span className="font-bold text-[11px]">{shortDay}</span>
+                    <span className="text-[9px] opacity-80">
+                      {isSelected ? "✓" : "+"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedDays.length > 0 ? (
+              <p className="text-[11px] text-teal-300/90 font-medium">
+                Selected ({selectedDays.length} days): {selectedDays.join(", ")}
+              </p>
+            ) : (
+              <p className="text-[11px] text-amber-400/90 font-medium">
+                No visiting days selected.
+              </p>
+            )}
+          </div>
+
+          {/* Visiting Hours */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 space-y-2.5">
+            <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-teal-400" />
+              <span>Visiting Hours</span>
+            </label>
+            <Input
+              value={visitingHours}
+              onChange={(e) => setVisitingHours(e.target.value)}
+              placeholder="e.g. 05:00 PM - 09:00 PM"
+              className="border-slate-800 bg-slate-950 text-slate-200"
+            />
+            <div className="space-y-1">
+              <span className="text-[10px] text-slate-400">Quick Presets:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {VISITING_HOUR_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setVisitingHours(preset)}
+                    className={`rounded-md px-2 py-1 text-[10px] font-medium border transition-colors ${
+                      visitingHours === preset
+                        ? "bg-teal-500/20 text-teal-300 border-teal-500/60 font-semibold"
+                        : "bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white"
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Hospital Photo with File Upload Input */}
+          <FileUploadInput
+            label="Hospital Photo"
+            value={image}
+            onChange={(url) => setImage(url)}
+            mediaList={mediaList}
+            placeholder="Upload chamber photo or enter URL..."
+          />
+
+          <div>
+            <label className="block text-slate-300 font-medium mb-1">
+              Google Maps Embed URL
+            </label>
+            <Input
+              name="embeddedMapUrl"
+              defaultValue={editingHospital?.embeddedMapUrl || ""}
+              placeholder="https://www.google.com/maps?q=...&output=embed"
+              className="border-slate-800 bg-slate-950 text-slate-200"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="border-slate-800 text-slate-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-teal-600 hover:bg-teal-500 text-white font-semibold gap-1.5"
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : null}
+              <span>{isEdit ? "Update Hospital" : "Save Hospital"}</span>
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
+  );
 }
 
 export function AdminPanel() {
@@ -2105,6 +2483,34 @@ export function AdminPanel() {
                               <Phone className="h-3.5 w-3.5 text-slate-500 shrink-0" />
                               <span>{hosp.phone}</span>
                             </p>
+                          )}
+
+                          {/* Visiting Days & Hours */}
+                          {((hosp.visitingDays && hosp.visitingDays.length > 0) || hosp.visitingHours) && (
+                            <div className="space-y-1.5 rounded-xl bg-slate-950/60 p-2.5 border border-slate-800/80">
+                              {hosp.visitingDays && hosp.visitingDays.length > 0 && (
+                                <div className="flex items-start gap-1.5 text-xs text-slate-300">
+                                  <Calendar className="h-3.5 w-3.5 text-teal-400 shrink-0 mt-0.5" />
+                                  <div className="flex flex-wrap gap-1">
+                                    {hosp.visitingDays.map((d) => (
+                                      <span
+                                        key={d}
+                                        className="rounded bg-teal-950/70 border border-teal-800/50 px-1.5 py-0.2 text-[10px] font-medium text-teal-300"
+                                      >
+                                        {d.slice(0, 3)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {hosp.visitingHours && (
+                                <p className="text-xs text-slate-300 flex items-center gap-1.5">
+                                  <Clock className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                                  <span className="font-medium text-emerald-300/90">{hosp.visitingHours}</span>
+                                </p>
+                              )}
+                            </div>
                           )}
 
                           {hosp.image && (
@@ -5723,181 +6129,14 @@ export function AdminPanel() {
       {/* ================= MODALS & DRAWERS ================= */}
 
       {/* 1. Add / Edit Hospital Modal */}
-      {isHospitalModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-          <Card className="w-full max-w-lg border-slate-800 bg-slate-900 p-6 rounded-2xl space-y-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-white text-lg">
-                {Boolean(editingHospital && recordId(editingHospital))
-                  ? "Edit Hospital"
-                  : "Add New Hospital"}
-              </h3>
-              <button
-                onClick={() => setIsHospitalModalOpen(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.currentTarget;
-                const name = (
-                  form.elements.namedItem("name") as HTMLInputElement
-                ).value;
-                const address = (
-                  form.elements.namedItem("address") as HTMLInputElement
-                ).value;
-                const phone = (
-                  form.elements.namedItem("phone") as HTMLInputElement
-                ).value;
-                const consultationFee =
-                  Number(
-                    (
-                      form.elements.namedItem(
-                        "consultationFee",
-                      ) as HTMLInputElement
-                    ).value,
-                  ) || 1000;
-                const embeddedMapUrl = (
-                  form.elements.namedItem("embeddedMapUrl") as HTMLInputElement
-                ).value;
-                const image =
-                  (form.elements.namedItem("image") as HTMLInputElement)
-                    ?.value ||
-                  editingHospital?.image ||
-                  "";
-
-                try {
-                  const isEdit = Boolean(
-                    editingHospital && recordId(editingHospital),
-                  );
-                  const url = isEdit
-                    ? `/api/admin/hospitals/${recordId(editingHospital)}`
-                    : "/api/admin/hospitals";
-                  const method = isEdit ? "PATCH" : "POST";
-                  const res = await fetch(url, {
-                    method,
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      name,
-                      address,
-                      phone,
-                      consultationFee,
-                      embeddedMapUrl,
-                      image,
-                      active: true,
-                    }),
-                  });
-                  if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    throw new Error(errData.error || "Operation failed");
-                  }
-                  triggerToast(
-                    isEdit
-                      ? "Hospital updated successfully!"
-                      : "Hospital added successfully!",
-                  );
-                  setIsHospitalModalOpen(false);
-                  loadAllData();
-                } catch (err: any) {
-                  triggerToast(err.message, true);
-                }
-              }}
-              className="space-y-3 text-xs"
-            >
-              <div>
-                <label className="block text-slate-400 mb-1">
-                  Hospital Name
-                </label>
-                <Input
-                  name="name"
-                  defaultValue={editingHospital?.name || ""}
-                  required
-                  className="border-slate-800 bg-slate-950 text-slate-200"
-                />
-              </div>
-              <div>
-                <label className="block text-slate-400 mb-1">
-                  Full Address
-                </label>
-                <Input
-                  name="address"
-                  defaultValue={editingHospital?.address || ""}
-                  required
-                  className="border-slate-800 bg-slate-950 text-slate-200"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Phone</label>
-                  <Input
-                    name="phone"
-                    defaultValue={editingHospital?.phone || ""}
-                    className="border-slate-800 bg-slate-950 text-slate-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">
-                    Consultation Fee (৳)
-                  </label>
-                  <Input
-                    name="consultationFee"
-                    type="number"
-                    defaultValue={editingHospital?.consultationFee || 1000}
-                    className="border-slate-800 bg-slate-950 text-slate-200"
-                  />
-                </div>
-              </div>
-
-              {/* Hospital Photo with File Upload Input */}
-              <FileUploadInput
-                label="Hospital Photo"
-                value={editingHospital?.image || ""}
-                onChange={(url) =>
-                  setEditingHospital((prev) => ({
-                    ...(prev || {}),
-                    image: url,
-                  }))
-                }
-                mediaList={mediaList}
-                placeholder="Upload chamber photo or enter URL..."
-              />
-
-              <div>
-                <label className="block text-slate-400 mb-1">
-                  Google Maps Embed URL
-                </label>
-                <Input
-                  name="embeddedMapUrl"
-                  defaultValue={editingHospital?.embeddedMapUrl || ""}
-                  placeholder="https://www.google.com/maps?q=...&output=embed"
-                  className="border-slate-800 bg-slate-950 text-slate-200"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsHospitalModalOpen(false)}
-                  className="border-slate-800 text-slate-300"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-teal-600 hover:bg-teal-500 text-white font-semibold"
-                >
-                  Save Hospital
-                </Button>
-              </div>
-            </form>
-          </Card>
-        </div>
-      )}
+      <HospitalModalDialog
+        isOpen={isHospitalModalOpen}
+        onClose={() => setIsHospitalModalOpen(false)}
+        editingHospital={editingHospital}
+        mediaList={mediaList}
+        onSaved={loadAllData}
+        triggerToast={triggerToast}
+      />
 
       {/* 2. Add / Edit Schedule Modal */}
       {isScheduleModalOpen && (

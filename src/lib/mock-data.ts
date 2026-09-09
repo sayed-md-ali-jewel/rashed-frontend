@@ -1,4 +1,4 @@
-import type { Doctor, GalleryItem, Schedule, Testimonial, WebsiteSetting } from "./types";
+import type { Doctor, GalleryItem, Hospital, Schedule, Testimonial, WebsiteSetting } from "./types";
 
 export const doctor: Doctor = {
   name: "Dr. Md. Rashedul Alam",
@@ -112,19 +112,60 @@ export const doctor: Doctor = {
   }
 };
 
+export const mockHospitals: Hospital[] = [
+  {
+    id: "hosp-1",
+    _id: "hosp-1",
+    name: "City Care Hospital",
+    address: "House 12, Road 8, Dhanmondi, Dhaka",
+    phone: "+8801700000000",
+    mapUrl: "https://www.google.com/maps?q=Dhanmondi+Dhaka&output=embed",
+    latitude: 23.7465,
+    longitude: 90.376,
+    consultationFee: 1000,
+    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80",
+    visitingDays: ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
+    visitingHours: "05:00 PM - 09:00 PM",
+    active: true
+  },
+  {
+    id: "hosp-2",
+    _id: "hosp-2",
+    name: "Green Life Clinic",
+    address: "Mirpur 10, Dhaka",
+    phone: "+8801711111111",
+    mapUrl: "https://www.google.com/maps?q=Mirpur+10+Dhaka&output=embed",
+    latitude: 23.8067,
+    longitude: 90.3686,
+    consultationFee: 900,
+    image: "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=80",
+    visitingDays: ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"],
+    visitingHours: "06:00 PM - 09:30 PM",
+    active: true
+  },
+  {
+    id: "hosp-3",
+    _id: "hosp-3",
+    name: "Central Health Clinic",
+    address: "Banani, Dhaka",
+    phone: "+8801722222222",
+    mapUrl: "https://www.google.com/maps?q=Banani+Dhaka&output=embed",
+    latitude: 23.7937,
+    longitude: 90.4066,
+    consultationFee: 1000,
+    image: "https://images.unsplash.com/photo-1504813184591-01572f98c85f?auto=format&fit=crop&w=1200&q=80",
+    visitingDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    visitingHours: "09:30 AM - 01:00 PM",
+    active: true
+  }
+];
+
 export const schedules: Schedule[] = [
   {
     id: "sch-1",
     title: "City Care Hospital - July 30",
     slug: "city-care-hospital-july-30",
-    hospital: {
-      name: "City Care Hospital",
-      address: "House 12, Road 8, Dhanmondi, Dhaka",
-      phone: "+8801700000000",
-      mapUrl: "https://www.google.com/maps?q=Dhanmondi+Dhaka&output=embed",
-      latitude: 23.7465,
-      longitude: 90.376,
-    },
+    hospital: mockHospitals[0],
     startsAt: "2026-07-30T10:00:00+06:00",
     endsAt: "2026-07-30T13:00:00+06:00",
     slotDurationMinutes: 10,
@@ -139,14 +180,7 @@ export const schedules: Schedule[] = [
     id: "sch-2",
     title: "Green Life Clinic - August 01",
     slug: "green-life-clinic-august-01",
-    hospital: {
-      name: "Green Life Clinic",
-      address: "Mirpur 10, Dhaka",
-      phone: "+8801711111111",
-      mapUrl: "https://www.google.com/maps?q=Mirpur+10+Dhaka&output=embed",
-      latitude: 23.8067,
-      longitude: 90.3686
-    },
+    hospital: mockHospitals[1],
     startsAt: "2026-08-01T17:00:00+06:00",
     endsAt: "2026-08-01T20:00:00+06:00",
     slotDurationMinutes: 15,
@@ -161,14 +195,7 @@ export const schedules: Schedule[] = [
     id: "sch-3",
     title: "Central Health Clinic - August 05",
     slug: "central-health-clinic-august-05",
-    hospital: {
-      name: "Central Health Clinic",
-      address: "Banani, Dhaka",
-      phone: "+8801722222222",
-      mapUrl: "https://www.google.com/maps?q=Banani+Dhaka&output=embed",
-      latitude: 23.7937,
-      longitude: 90.4066
-    },
+    hospital: mockHospitals[2],
     startsAt: "2026-08-05T09:30:00+06:00",
     endsAt: "2026-08-05T12:30:00+06:00",
     slotDurationMinutes: 10,

@@ -36,6 +36,8 @@ export const EmbeddedHospitalSchema = new Schema(
     longitude: { type: Number, default: 90.4125 },
     image: { type: String, default: "" },
     consultationFee: { type: Number, default: 0 },
+    visitingDays: [{ type: String }],
+    visitingHours: { type: String, default: "" },
     active: { type: Boolean, default: true }
   },
   { _id: false }
@@ -75,6 +77,8 @@ const HospitalSchema = new Schema(
     longitude: { type: Number, default: 90.4125 },
     image: { type: String, default: "" },
     consultationFee: { type: Number, default: 1000 },
+    visitingDays: [{ type: String }],
+    visitingHours: { type: String, default: "" },
     active: { type: Boolean, default: true }
   },
   { timestamps: true }

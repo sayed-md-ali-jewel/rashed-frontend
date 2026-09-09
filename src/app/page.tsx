@@ -1,4 +1,5 @@
 import { DoctorHero } from "@/components/sections/doctor-hero";
+import { ChambersSection } from "@/components/sections/chambers-section";
 import { ProfileDetails } from "@/components/sections/profile-details";
 import { ScheduleList } from "@/components/sections/schedule-list";
 import { getLandingPageData } from "@/lib/cms-data";
@@ -30,6 +31,7 @@ export default async function HomePage() {
   return (
     <main>
       <DoctorHero doctor={data.doctor} content={data.websiteSetting.content} />
+      <ChambersSection hospitals={data.hospitals} content={data.websiteSetting.content} doctorPhone={data.doctor.phone} />
       <ScheduleList schedules={data.schedules} content={data.websiteSetting.content} />
       <ProfileDetails doctor={data.doctor} testimonials={data.testimonials} gallery={data.gallery} content={data.websiteSetting.content} />
       

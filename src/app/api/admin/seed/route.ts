@@ -187,6 +187,9 @@ export async function POST() {
         latitude: 23.7465,
         longitude: 90.376,
         consultationFee: 1000,
+        image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80",
+        visitingDays: ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
+        visitingHours: "05:00 PM - 09:00 PM",
         active: true
       },
       {
@@ -199,6 +202,9 @@ export async function POST() {
         latitude: 23.8067,
         longitude: 90.3686,
         consultationFee: 900,
+        image: "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=80",
+        visitingDays: ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"],
+        visitingHours: "06:00 PM - 09:30 PM",
         active: true
       },
       {
@@ -211,6 +217,9 @@ export async function POST() {
         latitude: 23.7937,
         longitude: 90.4066,
         consultationFee: 1000,
+        image: "https://images.unsplash.com/photo-1504813184591-01572f98c85f?auto=format&fit=crop&w=1200&q=80",
+        visitingDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        visitingHours: "09:30 AM - 01:00 PM",
         active: true
       }
     ];
