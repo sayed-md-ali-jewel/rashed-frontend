@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Award, Clock3, Heart, Medal, Sparkles, UsersRound } from "lucide-react";
 import type { Doctor, WebsiteSetting } from "@/lib/types";
@@ -70,16 +69,16 @@ export function DoctorHero({ doctor, content }: { doctor: Doctor; content: Websi
         {/* Doctor Image Section (First on Mobile, Right on Desktop) */}
         <div className="relative mx-auto w-full max-w-[460px] order-1 lg:order-2 mb-6 sm:mb-8 lg:mb-0">
           <div className="relative aspect-[0.9] overflow-hidden rounded-3xl border border-line bg-white shadow-md">
-            <Image
+            <img
               src={heroImage}
               alt={doctor.name || "Doctor"}
-              fill
-              priority
-              unoptimized
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 45vw"
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=1200&q=80";
+              }}
             />
           </div>
+
 
           <div className="absolute -bottom-6 left-4 right-4 rounded-2xl border border-line bg-white/95 p-5 shadow-lg backdrop-blur-md sm:bottom-6 sm:left-6 sm:right-6">
             <div className="flex items-center gap-4">

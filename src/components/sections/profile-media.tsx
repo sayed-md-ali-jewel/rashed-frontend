@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { Building2, Camera, ChevronLeft, ChevronRight, Images, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GalleryItem, Testimonial } from "@/lib/types";
 import { safeImageSrc } from "@/lib/utils";
+
 
 export function TestimonialSlider({ testimonials }: { testimonials: Testimonial[] }) {
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -135,13 +135,13 @@ export function GalleryStrip({ gallery }: { gallery: GalleryItem[] }) {
               <div>
                 <div className="relative aspect-[16/11] overflow-hidden bg-panel">
                   {coverImage ? (
-                    <Image
+                    <img
                       src={coverImage}
                       alt={item.alt || item.title || "Facility"}
-                      width={620}
-                      height={420}
-                      unoptimized
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => {
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80";
+                      }}
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center text-muted">
@@ -220,14 +220,14 @@ export function GalleryStrip({ gallery }: { gallery: GalleryItem[] }) {
 
             <div className="relative flex-1 min-h-[320px] sm:min-h-[440px] max-h-[58vh] bg-black/90 flex items-center justify-center p-2 sm:p-4">
               {activeImage ? (
-                <div className="relative h-full w-full">
-                  <Image
+                <div className="relative h-full w-full flex items-center justify-center">
+                  <img
                     src={safeImageSrc(activeImage, "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80")}
                     alt={activeClinic.alt || activeClinic.title || "Clinic image"}
-                    fill
-                    unoptimized
-                    className="object-contain"
-                    priority
+                    className="max-h-[54vh] max-w-full object-contain rounded-lg"
+                    onError={(e) => {
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80";
+                    }}
                   />
                 </div>
               ) : (
@@ -277,12 +277,13 @@ export function GalleryStrip({ gallery }: { gallery: GalleryItem[] }) {
                           : "border-white/20 opacity-60 hover:opacity-100"
                       }`}
                     >
-                      <Image
+                      <img
                         src={safeImageSrc(img, "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80")}
                         alt={`Thumbnail ${idx + 1}`}
-                        fill
-                        unoptimized
-                        className="object-cover"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80";
+                        }}
                       />
                     </button>
                   ))}

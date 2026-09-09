@@ -48,11 +48,20 @@ function resolveUploadPath(pathSegments: string[]): string | null {
   // Search candidate root directories where uploads might be located in dev or production
   const candidateDirs = [
     path.join(process.cwd(), "public", "uploads"),
+    path.join(process.cwd(), "public", "public", "uploads"),
     path.join(process.cwd(), "uploads"),
     path.resolve(process.cwd(), "public/uploads"),
+    path.resolve(process.cwd(), "public/public/uploads"),
+    path.resolve(process.cwd(), "..", "public", "uploads"),
+    path.resolve(process.cwd(), "..", "public", "public", "uploads"),
+    path.resolve(process.cwd(), "..", "uploads"),
+    path.resolve(process.cwd(), "..", "public_html", "uploads"),
     path.resolve(__dirname, "..", "..", "..", "public", "uploads"),
+    path.resolve(__dirname, "..", "..", "..", "public", "public", "uploads"),
     path.resolve(__dirname, "..", "..", "..", "..", "public", "uploads"),
-    path.resolve(__dirname, "public", "uploads")
+    path.resolve(__dirname, "..", "..", "..", "..", "public", "public", "uploads"),
+    path.resolve(__dirname, "public", "uploads"),
+    path.resolve(__dirname, "public", "public", "uploads")
   ];
 
   for (const dir of candidateDirs) {

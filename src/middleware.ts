@@ -1,16 +1,37 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 function getOrigin(request: NextRequest): string {
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const host = forwardedHost
-    ? forwardedHost.split(",")[0].trim()
-    : request.headers.get("host") || request.nextUrl.host;
-  const forwardedProto = request.headers.get("x-forwarded-proto");
-  const proto = forwardedProto
-    ? forwardedProto.split(",")[0].trim()
-    : request.nextUrl.protocol.replace(":", "") || "https";
+  // 1. If explicit NEXT_PUBLIC_SITE_URL or NEXT_PUBLIC_APP_URL is configured and not localhost, use it
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+    return envUrl.replace(/\/$/, "");
+  }
 
-  return `${proto}://${host}`;
+  // 2. Check X-Forwarded-Host from reverse proxies
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  if (forwardedHost && !forwardedHost.includes("localhost") && !forwardedHost.includes("127.0.0.1")) {
+    const host = forwardedHost.split(",")[0].trim();
+    const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+    const proto = forwardedProto.split(",")[0].trim();
+    return `${proto}://${host}`;
+  }
+
+  // 3. Check Host header
+  const host = request.headers.get("host");
+  if (host && !host.includes("localhost") && !host.includes("127.0.0.1")) {
+    const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+    const proto = forwardedProto.split(",")[0].trim();
+    return `${proto}://${host}`;
+  }
+
+  // 4. If in production environment, default base URL to https://drrashed.bd
+  if (process.env.NODE_ENV === "production") {
+    return "https://drrashed.bd";
+  }
+
+  // 5. Local development fallback
+  const proto = request.nextUrl.protocol.replace(":", "") || "http";
+  return `${proto}://${request.nextUrl.host || "localhost:3000"}`;
 }
 
 function createRedirect(request: NextRequest, targetPath: string, nextParam?: string) {

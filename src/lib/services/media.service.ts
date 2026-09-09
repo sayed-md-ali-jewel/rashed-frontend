@@ -11,11 +11,20 @@ export class MediaService {
   private static getCandidateDirs() {
     return [
       path.join(process.cwd(), "public", "uploads"),
+      path.join(process.cwd(), "public", "public", "uploads"),
       path.join(process.cwd(), "uploads"),
       path.resolve(process.cwd(), "public/uploads"),
+      path.resolve(process.cwd(), "public/public/uploads"),
+      path.resolve(process.cwd(), "..", "public", "uploads"),
+      path.resolve(process.cwd(), "..", "public", "public", "uploads"),
+      path.resolve(process.cwd(), "..", "uploads"),
+      path.resolve(process.cwd(), "..", "public_html", "uploads"),
       path.resolve(__dirname, "..", "..", "..", "public", "uploads"),
+      path.resolve(__dirname, "..", "..", "..", "public", "public", "uploads"),
       path.resolve(__dirname, "..", "..", "..", "..", "public", "uploads"),
-      path.resolve(__dirname, "public", "uploads")
+      path.resolve(__dirname, "..", "..", "..", "..", "public", "public", "uploads"),
+      path.resolve(__dirname, "public", "uploads"),
+      path.resolve(__dirname, "public", "public", "uploads")
     ];
   }
 
@@ -34,6 +43,24 @@ export class MediaService {
     const filePath = path.join(primaryUploadDir, uniqueFilename);
 
     await fs.writeFile(filePath, buffer);
+
+    // Also mirror to existing secondary upload directories if present (e.g. cPanel nested public/public/uploads)
+    const secondaryDirs = [
+      path.join(process.cwd(), "public", "public", "uploads"),
+      path.join(process.cwd(), "uploads"),
+      path.resolve(process.cwd(), "..", "public", "uploads"),
+      path.resolve(process.cwd(), "..", "public_html", "uploads")
+    ];
+    for (const secDir of secondaryDirs) {
+      try {
+        const stats = await fs.stat(secDir);
+        if (stats.isDirectory()) {
+          await fs.writeFile(path.join(secDir, uniqueFilename), buffer);
+        }
+      } catch {
+        // Ignore if directory doesn't exist
+      }
+    }
 
     const publicUrl = `/uploads/${uniqueFilename}`;
 

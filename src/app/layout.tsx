@@ -16,7 +16,9 @@ const poppins = Poppins({
 
 export async function generateMetadata(): Promise<Metadata> {
   const setting = await getWebsiteSetting();
-  const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const rawSiteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.NODE_ENV === "production" ? "https://drrashed.bd" : "http://localhost:3000");
   const siteUrl = rawSiteUrl.startsWith("http://") || rawSiteUrl.startsWith("https://")
     ? rawSiteUrl
     : `https://${rawSiteUrl}`;
