@@ -70,6 +70,78 @@ export function cleanRelativeUrl(val?: string | null): string {
   return clean;
 }
 
+/**
+ * Returns the base URL of the server (e.g. "https://drrashed.bd" or "http://localhost:3000")
+ */
+export function getServerBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+
+  if (envUrl && typeof envUrl === "string") {
+    return envUrl.trim().replace(/\/$/, "");
+  }
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin.replace(/\/$/, "");
+  }
+
+  return "";
+}
+
+/**
+ * Connects the server / upload folder before the image relative path stored in MongoDB.
+ * MongoDB stores: "/uploads/WhatsApp_Image_2026-09-09_at_8_58_39_AM_1788922800441.jpeg"
+ * Result: "https://drrashed.bd/uploads/WhatsApp_Image_2026-09-09_at_8_58_39_AM_1788922800441.jpeg"
+ */
+export function connectServerUploadUrl(src?: string | null): string {
+  if (!src || typeof src !== "string" || !src.trim()) {
+    return "";
+  }
+  const clean = src.trim();
+
+  // Data URLs or base64
+  if (clean.startsWith("data:")) {
+    return clean;
+  }
+
+  // External full URLs that are NOT our uploads (e.g., Unsplash)
+  const uploadsIdx = clean.indexOf("/uploads/");
+  if (
+    uploadsIdx === -1 &&
+    !clean.startsWith("uploads/") &&
+    (clean.startsWith("http://") || clean.startsWith("https://"))
+  ) {
+    return clean;
+  }
+
+  // Extract the relative upload path
+  let relativeUploadPath = "";
+  if (uploadsIdx !== -1) {
+    relativeUploadPath = clean.slice(uploadsIdx);
+  } else if (clean.startsWith("uploads/")) {
+    relativeUploadPath = `/${clean}`;
+  } else if (clean.startsWith("/")) {
+    relativeUploadPath = clean.startsWith("/uploads/") ? clean : `/uploads${clean}`;
+  } else {
+    relativeUploadPath = `/uploads/${clean}`;
+  }
+
+  // Connect server base URL
+  const serverBase = getServerBaseUrl();
+  if (serverBase) {
+    // Avoid double /uploads if serverBase already ends with /uploads
+    if (serverBase.endsWith("/uploads") && relativeUploadPath.startsWith("/uploads/")) {
+      return `${serverBase}${relativeUploadPath.slice(8)}`;
+    }
+    return `${serverBase}${relativeUploadPath}`;
+  }
+
+  return relativeUploadPath;
+}
+
+/**
+ * Safe image resolver that connects server upload folder to relative MongoDB paths
+ * and provides fallbacks for invalid or empty image sources.
+ */
 export function safeImageSrc(
   src?: string | null,
   fallback = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=1200&q=80"
@@ -77,28 +149,7 @@ export function safeImageSrc(
   if (!src || typeof src !== "string" || !src.trim()) {
     return fallback;
   }
-  const clean = src.trim();
-
-  // If the URL has a hardcoded base URL (e.g. http://localhost:3000/uploads/... or https://drrashed.bd/uploads/...)
-  // strip the domain and keep "/uploads/..." so it loads seamlessly anywhere
-  const uploadsIndex = clean.indexOf("/uploads/");
-  if (uploadsIndex !== -1) {
-    return clean.slice(uploadsIndex);
-  }
-
-  // If it's a relative path like "uploads/xyz.jpg"
-  if (clean.startsWith("uploads/")) {
-    return `/${clean}`;
-  }
-
-  if (
-    clean.startsWith("http://") ||
-    clean.startsWith("https://") ||
-    clean.startsWith("data:") ||
-    clean.startsWith("/")
-  ) {
-    return clean;
-  }
-  return `/${clean}`;
+  const resolved = connectServerUploadUrl(src);
+  return resolved || fallback;
 }
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { SEOFields } from "./types";
+import { safeImageSrc } from "./utils";
 
 export function buildMetadata(
   seo?: Partial<SEOFields> | null,
@@ -15,7 +16,10 @@ export function buildMetadata(
   const canonical = seo?.canonicalUrl || (baseDomain ? `${baseDomain}${path}` : undefined);
   const ogTitle = seo?.ogTitle || title;
   const ogDescription = seo?.ogDescription || description;
-  const image = seo?.ogImage || fallbacks?.image;
+  const rawImage = seo?.ogImage || fallbacks?.image;
+  const image = rawImage ? safeImageSrc(rawImage) : undefined;
+  const rawTwitterImage = seo?.twitterImage || image;
+  const twitterImage = rawTwitterImage ? safeImageSrc(rawTwitterImage) : undefined;
 
   return {
     title,
@@ -38,7 +42,7 @@ export function buildMetadata(
       card: "summary_large_image",
       title: seo?.twitterTitle || ogTitle,
       description: seo?.twitterDescription || ogDescription,
-      images: seo?.twitterImage ? [seo.twitterImage] : image ? [image] : undefined
+      images: twitterImage ? [twitterImage] : undefined
     }
   };
 }

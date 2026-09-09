@@ -19,6 +19,7 @@ export class MediaService {
       path.resolve(process.cwd(), "..", "public", "public", "uploads"),
       path.resolve(process.cwd(), "..", "uploads"),
       path.resolve(process.cwd(), "..", "public_html", "uploads"),
+      path.resolve(process.cwd(), "..", "..", "public_html", "uploads"),
       path.resolve(__dirname, "..", "..", "..", "public", "uploads"),
       path.resolve(__dirname, "..", "..", "..", "public", "public", "uploads"),
       path.resolve(__dirname, "..", "..", "..", "..", "public", "uploads"),
