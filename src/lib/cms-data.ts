@@ -77,6 +77,15 @@ function mapSeo(value: unknown, fallback: SEOFields): SEOFields {
   };
 }
 
+function toPlainObject<T>(data: T): T {
+  if (data === null || data === undefined) return data;
+  try {
+    return JSON.parse(JSON.stringify(data));
+  } catch {
+    return data;
+  }
+}
+
 function mapDoctor(item: MongoDocument | null, serviceItems: MongoDocument[] = []): Doctor {
   if (!item && (!serviceItems || serviceItems.length === 0)) return doctor;
 
@@ -117,7 +126,12 @@ function mapDoctor(item: MongoDocument | null, serviceItems: MongoDocument[] = [
     contactInformation: asString(doc.contactInformation, doctor.contactInformation),
     socialLinks:
       typeof doc.socialLinks === "object" && doc.socialLinks !== null
-        ? (doc.socialLinks as Doctor["socialLinks"])
+        ? {
+            facebook: asString((doc.socialLinks as any).facebook),
+            linkedin: asString((doc.socialLinks as any).linkedin),
+            x: asString((doc.socialLinks as any).x, asString((doc.socialLinks as any).twitter)),
+            youtube: asString((doc.socialLinks as any).youtube)
+          }
         : doctor.socialLinks,
     biography: asString(doc.biography, doctor.biography),
     heroBadge: asString(doc.heroBadge, doctor.heroBadge),
@@ -126,20 +140,20 @@ function mapDoctor(item: MongoDocument | null, serviceItems: MongoDocument[] = [
     heroCareDescription: asString(doc.heroCareDescription, doctor.heroCareDescription),
     heroStats:
       Array.isArray(doc.heroStats) && doc.heroStats.length > 0
-        ? doc.heroStats.map((stat) => stat as { label: string; value: string })
+        ? doc.heroStats.map((stat: any) => ({
+            label: asString(stat?.label, ""),
+            value: asString(stat?.value, "")
+          }))
         : doctor.heroStats,
     aboutHeading: asString(doc.aboutHeading, doctor.aboutHeading),
     aboutBio: Array.isArray(doc.aboutBio) ? asStringArray(doc.aboutBio, doctor.aboutBio) : doctor.aboutBio,
     aboutImageUrl: asString(doc.aboutImageUrl, doctor.aboutImageUrl),
     expertiseCards:
       Array.isArray(doc.expertiseCards) && doc.expertiseCards.length > 0
-        ? doc.expertiseCards.map((card) => {
-            const c = typeof card === "object" && card !== null ? (card as Record<string, unknown>) : {};
-            return {
-              title: asString(c.title, "Specialization"),
-              items: asStringArray(c.items, [])
-            };
-          })
+        ? doc.expertiseCards.map((card: any) => ({
+            title: asString(card?.title, "Specialization"),
+            items: asStringArray(card?.items, [])
+          }))
         : doctor.expertiseCards,
     medicalServices: resolvedServices,
     consultationFee: asNumber(doc.consultationFee, doctor.consultationFee),
@@ -341,28 +355,28 @@ export async function getLandingPageData(): Promise<LandingPageData> {
         ? Array.from(new Map(mappedSchedules.filter((s) => s.hospital).map((s) => [s.hospital.name, s.hospital])).values())
         : mockHospitals;
 
-    return {
+    return toPlainObject({
       doctor: mapDoctor(doctorItem, serviceItems),
       schedules: mappedSchedules.map((item) => ({ ...item, bookedSlots: bookedSlots[item.id] ?? [] })),
       hospitals: mappedHospitals,
       testimonials: testimonialItems.length > 0 ? testimonialItems.map(mapTestimonial) : testimonials,
       gallery: galleryItems.length > 0 ? galleryItems.map(mapGalleryItem) : gallery,
       websiteSetting: mapWebsiteSetting(websiteSettingItem)
-    };
+    });
   } catch {
-    return { doctor, schedules: upcomingFallbackSchedules, hospitals: mockHospitals, testimonials, gallery, websiteSetting };
+    return toPlainObject({ doctor, schedules: upcomingFallbackSchedules, hospitals: mockHospitals, testimonials, gallery, websiteSetting });
   }
 }
 
 export async function getWebsiteSetting(): Promise<WebsiteSetting> {
-  if (!hasMongoUri()) return websiteSetting;
+  if (!hasMongoUri()) return toPlainObject(websiteSetting);
 
   try {
     await connectMongo();
     const item = await WebsiteSettingModel.findOne().sort({ updatedAt: -1 }).lean<MongoDocument | null>();
-    return mapWebsiteSetting(item);
+    return toPlainObject(mapWebsiteSetting(item));
   } catch {
-    return websiteSetting;
+    return toPlainObject(websiteSetting);
   }
 }
 
@@ -370,20 +384,20 @@ export async function getScheduleBySlug(slug: string): Promise<Schedule | null> 
   const fallback = schedules.find((schedule) => schedule.slug === slug) ?? null;
 
   if (!hasMongoUri()) {
-    return fallback;
+    return toPlainObject(fallback);
   }
 
   try {
     await connectMongo();
 
     const item = await ScheduleModel.findOne({ slug }).lean<MongoDocument | null>();
-    if (!item) return fallback;
+    if (!item) return toPlainObject(fallback);
 
     const schedule = mapSchedule(item);
     const bookedSlots = await getBookedSlots([schedule.id]);
-    return { ...schedule, bookedSlots: bookedSlots[schedule.id] ?? [] };
+    return toPlainObject({ ...schedule, bookedSlots: bookedSlots[schedule.id] ?? [] });
   } catch {
-    return fallback;
+    return toPlainObject(fallback);
   }
 }
 
@@ -391,19 +405,19 @@ export async function getScheduleById(scheduleId: string): Promise<Schedule | nu
   const fallback = schedules.find((schedule) => schedule.id === scheduleId) ?? null;
 
   if (!hasMongoUri()) {
-    return fallback;
+    return toPlainObject(fallback);
   }
 
   try {
     await connectMongo();
 
     const item = await ScheduleModel.findById(scheduleId).lean<MongoDocument | null>();
-    if (!item) return fallback;
+    if (!item) return toPlainObject(fallback);
 
     const schedule = mapSchedule(item);
     const bookedSlots = await getBookedSlots([schedule.id]);
-    return { ...schedule, bookedSlots: bookedSlots[schedule.id] ?? [] };
+    return toPlainObject({ ...schedule, bookedSlots: bookedSlots[schedule.id] ?? [] });
   } catch {
-    return fallback;
+    return toPlainObject(fallback);
   }
 }
