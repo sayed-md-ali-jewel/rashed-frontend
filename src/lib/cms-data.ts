@@ -338,7 +338,7 @@ export async function getLandingPageData(): Promise<LandingPageData> {
     const mappedHospitals = Array.isArray(hospitalItems) && hospitalItems.length > 0
       ? hospitalItems.map(mapHospital)
       : mappedSchedules.length > 0
-        ? Array.from(new Map(mappedSchedules.map((s) => [s.hospital.name, s.hospital])).values())
+        ? Array.from(new Map(mappedSchedules.filter((s) => s.hospital).map((s) => [s.hospital.name, s.hospital])).values())
         : mockHospitals;
 
     return {

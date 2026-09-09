@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { CalendarClock, Clock3, MapPinned, Share2, Wallet } from "lucide-react";
 import type { Schedule, WebsiteSetting } from "@/lib/types";
@@ -18,13 +20,13 @@ export function ScheduleList({ schedules, content }: { schedules: Schedule[]; co
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1 text-xs font-semibold text-ink">
               <span className="grid size-3.5 place-items-center rounded-full bg-blue text-[8px] text-white">✓</span>
-              {content.scheduleBadge || "Available Sessions"}
+              {content?.scheduleBadge || "Available Sessions"}
             </div>
             <h2 className="mt-3 text-3xl font-extrabold leading-tight text-ink sm:text-4xl lg:text-[38px]">
-              {content.scheduleTitle || "Consultation Schedules"}
+              {content?.scheduleTitle || "Consultation Schedules"}
             </h2>
             <p className="mt-3 max-w-2xl text-[16px] leading-relaxed text-muted">
-              {content.scheduleDescription || "View upcoming chamber timings, locations, and book your verified serial slot directly."}
+              {content?.scheduleDescription || "View upcoming chamber timings, locations, and book your verified serial slot directly."}
             </p>
           </div>
         </div>
@@ -32,9 +34,9 @@ export function ScheduleList({ schedules, content }: { schedules: Schedule[]; co
         {displaySchedules.length === 0 ? (
           <Card className="mt-10 p-12 text-center rounded-2xl border border-line bg-panel">
             <CalendarClock className="mx-auto h-12 w-12 text-muted" />
-            <h3 className="mt-4 text-xl font-bold text-ink">{content.scheduleEmptyTitle || "No active schedules"}</h3>
+            <h3 className="mt-4 text-xl font-bold text-ink">{content?.scheduleEmptyTitle || "No active schedules"}</h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-              {content.scheduleEmptyDescription || "Check back soon for new consultation chamber timings."}
+              {content?.scheduleEmptyDescription || "Check back soon for new consultation chamber timings."}
             </p>
           </Card>
         ) : null}
@@ -99,7 +101,7 @@ export function ScheduleList({ schedules, content }: { schedules: Schedule[]; co
                   </span>
                   <Link href={`/schedules/${schedule.slug}`}>
                     <Button variant="gold" size="sm" className="gap-2">
-                      {content.scheduleBookButton || "Select Slot"}
+                      {content?.scheduleBookButton || "Select Slot"}
                       <span className="grid size-5 place-items-center rounded-full bg-ink">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
                           <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />

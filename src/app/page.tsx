@@ -19,21 +19,27 @@ function phoneHref(phone?: string) {
 
 export default async function HomePage() {
   const data = await getLandingPageData();
+  const schedules = Array.isArray(data.schedules) ? data.schedules : [];
+  const hospitals = Array.isArray(data.hospitals) ? data.hospitals : [];
+  const content = data.websiteSetting?.content || {};
+
   const clinics = Array.from(
     new Map(
-      data.schedules.map((schedule) => [
-        `${schedule.hospital.name}-${schedule.hospital.address}`,
-        schedule.hospital
-      ])
+      schedules
+        .filter((schedule) => schedule && schedule.hospital && schedule.hospital.name)
+        .map((schedule) => [
+          `${schedule.hospital.name}-${schedule.hospital.address || ""}`,
+          schedule.hospital
+        ])
     ).values()
   );
 
   return (
     <main>
-      <DoctorHero doctor={data.doctor} content={data.websiteSetting.content} />
-      <ChambersSection hospitals={data.hospitals} content={data.websiteSetting.content} doctorPhone={data.doctor.phone} />
-      <ScheduleList schedules={data.schedules} content={data.websiteSetting.content} />
-      <ProfileDetails doctor={data.doctor} testimonials={data.testimonials} gallery={data.gallery} content={data.websiteSetting.content} />
+      <DoctorHero doctor={data.doctor} content={content} />
+      <ChambersSection hospitals={hospitals} content={content} doctorPhone={data.doctor?.phone} />
+      <ScheduleList schedules={schedules} content={content} />
+      <ProfileDetails doctor={data.doctor} testimonials={data.testimonials || []} gallery={data.gallery || []} content={content} />
       
       {/* Contact & Chambers Section */}
       <section id="contact" className="bg-cream py-16 lg:py-20 border-t border-line">
@@ -41,22 +47,22 @@ export default async function HomePage() {
           <div className="rounded-3xl border border-line bg-white p-8 md:p-12 shadow-md">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3.5 py-1 text-xs font-semibold text-ink">
               <span className="grid size-3.5 place-items-center rounded-full bg-blue text-[8px] text-white">✓</span>
-              {data.websiteSetting.content.contactBadge || "Chamber Information"}
+              {content.contactBadge || "Chamber Information"}
             </div>
             <h2 className="mt-3 text-2xl font-extrabold text-ink md:text-3xl">
-              {data.websiteSetting.content.contactTitle || "Hospital Chambers & Contact Info"}
+              {content.contactTitle || "Hospital Chambers & Contact Info"}
             </h2>
             <p className="mt-2 text-sm text-muted">
               Visit during scheduled hours or call directly for emergency assistance.
             </p>
 
             <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {(clinics.length > 0 ? clinics : [{ name: data.websiteSetting.siteName, address: data.websiteSetting.contactAddress, phone: data.websiteSetting.contactPhone }]).map((clinic) => {
-                const phone = clinic.phone ?? data.doctor.phone;
+              {(clinics.length > 0 ? clinics : [{ name: data.websiteSetting?.siteName || "Medical Chamber", address: data.websiteSetting?.contactAddress || "Dhaka, Bangladesh", phone: data.websiteSetting?.contactPhone }]).map((clinic, cIdx) => {
+                const phone = clinic.phone ?? data.doctor?.phone;
                 const href = phoneHref(phone);
 
                 return (
-                  <div key={`${clinic.name}-${clinic.address}`} className="rounded-2xl border border-line bg-panel p-6 shadow-sm transition hover:bg-white hover:shadow-md duration-200">
+                  <div key={`${clinic.name}-${clinic.address || cIdx}`} className="rounded-2xl border border-line bg-panel p-6 shadow-sm transition hover:bg-white hover:shadow-md duration-200">
                     <h3 className="text-lg font-bold text-ink">{clinic.name}</h3>
                     <div className="mt-3 space-y-2 text-sm text-[#474747]">
                       <p>{clinic.address}</p>

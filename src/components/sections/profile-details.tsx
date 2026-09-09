@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Activity,
   Award,
@@ -129,8 +131,15 @@ export function ProfileDetails({
               </h2>
 
               <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-[#3c3c3c] sm:text-[16px]">
-                {doctor.aboutBio.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
+                {(Array.isArray(doctor.aboutBio) && doctor.aboutBio.length > 0
+                  ? doctor.aboutBio
+                  : typeof doctor.aboutBio === "string" && doctor.aboutBio
+                  ? [doctor.aboutBio]
+                  : Array.isArray(doctor.biography)
+                  ? (doctor.biography as string[])
+                  : [doctor.biography || "Dedicated to excellence in clinical healthcare, preventive care, and patient-first medical practice."]
+                ).map((paragraph, pIdx) => (
+                  <p key={pIdx}>{paragraph}</p>
                 ))}
               </div>
 

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Award, Clock3, Heart, Medal, Sparkles, UsersRound } from "lucide-react";
 import type { Doctor, WebsiteSetting } from "@/lib/types";
@@ -34,7 +36,7 @@ export function DoctorHero({ doctor, content }: { doctor: Doctor; content: Websi
               href="/appointments"
               className="inline-flex items-center gap-3 rounded-full bg-gold px-7 py-4 text-sm font-semibold text-ink shadow-sm transition hover:bg-gold-dark hover:-translate-y-0.5"
             >
-              {content.heroPrimaryCta || "Book Consultation"}
+              {content?.heroPrimaryCta || "Book Consultation"}
               <span className="grid size-6 place-items-center rounded-full bg-ink">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -46,15 +48,20 @@ export function DoctorHero({ doctor, content }: { doctor: Doctor; content: Websi
               href="#services"
               className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-ink bg-white px-6 py-4 text-sm font-semibold text-ink transition hover:bg-ink hover:text-white"
             >
-              {content.heroSecondaryCta || "Explore Services"}
+              {content?.heroSecondaryCta || "Explore Services"}
             </Link>
           </div>
 
           <div className="mt-10 sm:mt-12 grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
-            {doctor.heroStats.map((stat, index) => {
-              const Icon = statIcons[index] ?? Award;
+            {(Array.isArray(doctor.heroStats) && doctor.heroStats.length > 0 ? doctor.heroStats : [
+              { label: "Patients Served", value: "5000+" },
+              { label: "Years Experience", value: "15+" },
+              { label: "Success Rate", value: "98%" },
+              { label: "Emergency Care", value: "24/7" }
+            ]).map((stat, index) => {
+              const Icon = statIcons[index % statIcons.length] ?? Award;
               return (
-                <div key={stat.label} className="rounded-2xl border border-line bg-white p-4 shadow-sm text-center transition hover:-translate-y-0.5">
+                <div key={stat.label || index} className="rounded-2xl border border-line bg-white p-4 shadow-sm text-center transition hover:-translate-y-0.5">
                   <span className="mx-auto grid size-9 place-items-center rounded-full bg-panel text-ink">
                     <Icon className="h-4 w-4" />
                   </span>

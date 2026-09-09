@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Building2, Calendar, Clock, ExternalLink, MapPin, Phone } from "lucide-react";
 import type { Hospital, WebsiteSetting } from "@/lib/types";
