@@ -5,6 +5,7 @@ import {
   DoctorModel,
   GalleryItemModel,
   ScheduleModel,
+  ServiceModel,
   TestimonialModel,
   WebsiteSettingModel
 } from "./models";
@@ -72,40 +73,63 @@ function mapSeo(value: unknown, fallback: SEOFields): SEOFields {
   };
 }
 
-function mapDoctor(item: MongoDocument | null): Doctor {
-  if (!item) return doctor;
+function mapDoctor(item: MongoDocument | null, serviceItems: MongoDocument[] = []): Doctor {
+  if (!item && (!serviceItems || serviceItems.length === 0)) return doctor;
+
+  const doc = item || {};
+
+  let resolvedServices = doctor.medicalServices;
+  if (Array.isArray(serviceItems) && serviceItems.length > 0) {
+    resolvedServices = serviceItems.map((s) => ({
+      title: asString(s.name, asString(s.title, "Clinical Service")),
+      description: asString(s.description, "Comprehensive clinical care and diagnostic consultations."),
+      items: Array.isArray(s.items) && s.items.length > 0
+        ? asStringArray(s.items, [])
+        : [
+            s.fee ? `Consultation Fee: ৳${s.fee}` : "Professional Care",
+            "Personalized Diagnostic Assessment",
+            "Continuous Follow-up Support"
+          ]
+    }));
+  } else if (Array.isArray(doc.medicalServices) && doc.medicalServices.length > 0) {
+    resolvedServices = doc.medicalServices.map((service: any) => ({
+      title: asString(service.title, asString(service.name, "Clinical Service")),
+      description: asString(service.description, "Comprehensive clinical care."),
+      items: asStringArray(service.items, ["Personalized Care", "Diagnostic Assessment"])
+    }));
+  }
 
   return {
-    name: asString(item.name, doctor.name),
-    title: asString(item.title, doctor.title),
-    designation: asString(item.designation, doctor.designation),
-    specialization: asString(item.specialization, doctor.specialization),
-    medicalRegistrationNumber: asString(item.medicalRegistrationNumber, doctor.medicalRegistrationNumber),
-    yearsOfExperience: asNumber(item.yearsOfExperience, doctor.yearsOfExperience ?? 0),
-    onlineConsultationFee: asNumber(item.onlineConsultationFee, doctor.onlineConsultationFee ?? 0),
-    languages: Array.isArray(item.languages) ? asStringArray(item.languages, doctor.languages ?? []) : (doctor.languages ?? []),
-    certifications: Array.isArray(item.certifications) ? asStringArray(item.certifications, doctor.certifications ?? []) : (doctor.certifications ?? []),
-    hospitalAffiliations: Array.isArray(item.hospitalAffiliations) ? asStringArray(item.hospitalAffiliations, doctor.hospitalAffiliations ?? []) : (doctor.hospitalAffiliations ?? []),
-    contactInformation: asString(item.contactInformation, doctor.contactInformation),
+    name: asString(doc.name, doctor.name),
+    title: asString(doc.title, doctor.title),
+    designation: asString(doc.designation, doctor.designation),
+    specialization: asString(doc.specialization, doctor.specialization),
+    medicalRegistrationNumber: asString(doc.medicalRegistrationNumber, doctor.medicalRegistrationNumber),
+    yearsOfExperience: asNumber(doc.yearsOfExperience, doctor.yearsOfExperience ?? 0),
+    onlineConsultationFee: asNumber(doc.onlineConsultationFee, doctor.onlineConsultationFee ?? 0),
+    languages: Array.isArray(doc.languages) ? asStringArray(doc.languages, doctor.languages ?? []) : (doctor.languages ?? []),
+    certifications: Array.isArray(doc.certifications) ? asStringArray(doc.certifications, doctor.certifications ?? []) : (doctor.certifications ?? []),
+    hospitalAffiliations: Array.isArray(doc.hospitalAffiliations) ? asStringArray(doc.hospitalAffiliations, doctor.hospitalAffiliations ?? []) : (doctor.hospitalAffiliations ?? []),
+    contactInformation: asString(doc.contactInformation, doctor.contactInformation),
     socialLinks:
-      typeof item.socialLinks === "object" && item.socialLinks !== null
-        ? (item.socialLinks as Doctor["socialLinks"])
+      typeof doc.socialLinks === "object" && doc.socialLinks !== null
+        ? (doc.socialLinks as Doctor["socialLinks"])
         : doctor.socialLinks,
-    biography: asString(item.biography, doctor.biography),
-    heroBadge: asString(item.heroBadge, doctor.heroBadge),
-    heroIntro: asString(item.heroIntro, doctor.heroIntro),
-    heroCareTitle: asString(item.heroCareTitle, doctor.heroCareTitle),
-    heroCareDescription: asString(item.heroCareDescription, doctor.heroCareDescription),
+    biography: asString(doc.biography, doctor.biography),
+    heroBadge: asString(doc.heroBadge, doctor.heroBadge),
+    heroIntro: asString(doc.heroIntro, doctor.heroIntro),
+    heroCareTitle: asString(doc.heroCareTitle, doctor.heroCareTitle),
+    heroCareDescription: asString(doc.heroCareDescription, doctor.heroCareDescription),
     heroStats:
-      Array.isArray(item.heroStats) && item.heroStats.length > 0
-        ? item.heroStats.map((stat) => stat as { label: string; value: string })
+      Array.isArray(doc.heroStats) && doc.heroStats.length > 0
+        ? doc.heroStats.map((stat) => stat as { label: string; value: string })
         : doctor.heroStats,
-    aboutHeading: asString(item.aboutHeading, doctor.aboutHeading),
-    aboutBio: Array.isArray(item.aboutBio) ? asStringArray(item.aboutBio, doctor.aboutBio) : doctor.aboutBio,
-    aboutImageUrl: asString(item.aboutImageUrl, doctor.aboutImageUrl),
+    aboutHeading: asString(doc.aboutHeading, doctor.aboutHeading),
+    aboutBio: Array.isArray(doc.aboutBio) ? asStringArray(doc.aboutBio, doctor.aboutBio) : doctor.aboutBio,
+    aboutImageUrl: asString(doc.aboutImageUrl, doctor.aboutImageUrl),
     expertiseCards:
-      Array.isArray(item.expertiseCards) && item.expertiseCards.length > 0
-        ? item.expertiseCards.map((card) => {
+      Array.isArray(doc.expertiseCards) && doc.expertiseCards.length > 0
+        ? doc.expertiseCards.map((card) => {
             const c = typeof card === "object" && card !== null ? (card as Record<string, unknown>) : {};
             return {
               title: asString(c.title, "Specialization"),
@@ -113,21 +137,18 @@ function mapDoctor(item: MongoDocument | null): Doctor {
             };
           })
         : doctor.expertiseCards,
-    medicalServices:
-      Array.isArray(item.medicalServices) && item.medicalServices.length > 0
-        ? item.medicalServices.map((service) => service as { title: string; description: string; items: string[] })
-        : doctor.medicalServices,
-    consultationFee: asNumber(item.consultationFee, doctor.consultationFee),
-    phone: asString(item.phone, doctor.phone),
-    whatsapp: asString(item.whatsapp, doctor.whatsapp),
-    address: asString(item.address, doctor.address),
-    image: asString(item.image, doctor.image),
-    qualifications: Array.isArray(item.qualifications) ? asStringArray(item.qualifications, doctor.qualifications ?? []) : (doctor.qualifications ?? []),
-    specialisations: Array.isArray(item.specialisations) ? asStringArray(item.specialisations, doctor.specialisations ?? []) : (doctor.specialisations ?? []),
-    experience: Array.isArray(item.experience) ? asStringArray(item.experience, doctor.experience ?? []) : (doctor.experience ?? []),
-    awards: Array.isArray(item.awards) ? asStringArray(item.awards, doctor.awards ?? []) : (doctor.awards ?? []),
-    services: Array.isArray(item.services) ? asStringArray(item.services, doctor.services ?? []) : (doctor.services ?? []),
-    seo: mapSeo(item.seo, doctor.seo)
+    medicalServices: resolvedServices,
+    consultationFee: asNumber(doc.consultationFee, doctor.consultationFee),
+    phone: asString(doc.phone, doctor.phone),
+    whatsapp: asString(doc.whatsapp, doctor.whatsapp),
+    address: asString(doc.address, doctor.address),
+    image: asString(doc.image, doctor.image),
+    qualifications: Array.isArray(doc.qualifications) ? asStringArray(doc.qualifications, doctor.qualifications ?? []) : (doctor.qualifications ?? []),
+    specialisations: Array.isArray(doc.specialisations) ? asStringArray(doc.specialisations, doctor.specialisations ?? []) : (doctor.specialisations ?? []),
+    experience: Array.isArray(doc.experience) ? asStringArray(doc.experience, doctor.experience ?? []) : (doctor.experience ?? []),
+    awards: Array.isArray(doc.awards) ? asStringArray(doc.awards, doctor.awards ?? []) : (doctor.awards ?? []),
+    services: Array.isArray(doc.services) ? asStringArray(doc.services, doctor.services ?? []) : (doctor.services ?? []),
+    seo: mapSeo(doc.seo, doctor.seo)
   };
 }
 
@@ -280,7 +301,7 @@ export async function getLandingPageData(): Promise<LandingPageData> {
   try {
     await connectMongo();
 
-    const [doctorItem, scheduleItems, testimonialItems, galleryItems, websiteSettingItem] = await Promise.all([
+    const [doctorItem, scheduleItems, testimonialItems, galleryItems, websiteSettingItem, serviceItems] = await Promise.all([
       DoctorModel.findOne().sort({ updatedAt: -1 }).lean<MongoDocument | null>(),
       ScheduleModel.find({ scheduleStatus: { $ne: "cancelled" } })
         .sort({ startsAt: 1 })
@@ -291,14 +312,15 @@ export async function getLandingPageData(): Promise<LandingPageData> {
       GalleryItemModel.find({ active: { $ne: false } })
         .sort({ createdAt: -1 })
         .lean<MongoDocument[]>(),
-      WebsiteSettingModel.findOne().sort({ updatedAt: -1 }).lean<MongoDocument | null>()
+      WebsiteSettingModel.findOne().sort({ updatedAt: -1 }).lean<MongoDocument | null>(),
+      ServiceModel.find({ active: { $ne: false } }).sort({ order: 1, createdAt: 1 }).lean<MongoDocument[]>()
     ]);
 
     const mappedSchedules = scheduleItems.map((item) => mapSchedule(item)).filter(isUpcomingSchedule);
     const bookedSlots = await getBookedSlots(mappedSchedules.map((item) => item.id));
 
     return {
-      doctor: mapDoctor(doctorItem),
+      doctor: mapDoctor(doctorItem, serviceItems),
       schedules: mappedSchedules.map((item) => ({ ...item, bookedSlots: bookedSlots[item.id] ?? [] })),
       testimonials: testimonialItems.length > 0 ? testimonialItems.map(mapTestimonial) : testimonials,
       gallery: galleryItems.length > 0 ? galleryItems.map(mapGalleryItem) : gallery,

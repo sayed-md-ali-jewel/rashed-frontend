@@ -344,10 +344,42 @@ export async function POST() {
     // 9. Services
     await ServiceModel.deleteMany({});
     await ServiceModel.insertMany([
-      { name: "General Medicine Consultation", description: "Comprehensive health evaluation and evidence-based diagnostic assessment.", fee: 1000, icon: "Stethoscope", active: true, order: 1 },
-      { name: "Diabetes & Endocrine Care", description: "Personalized glycemic control, HbA1c monitoring, and dietary planning.", fee: 1000, icon: "Activity", active: true, order: 2 },
-      { name: "Hypertension & Cardiovascular Health", description: "Long-term blood pressure control and cardiovascular risk prevention.", fee: 1000, icon: "Heart", active: true, order: 3 },
-      { name: "Respiratory Disease Management", description: "Treatment for asthma, COPD, bronchitis, and persistent respiratory symptoms.", fee: 1000, icon: "Wind", active: true, order: 4 }
+      {
+        name: "General Medicine Consultation",
+        description: "Comprehensive health evaluation and evidence-based diagnostic assessment.",
+        fee: 1000,
+        icon: "Stethoscope",
+        items: ["Health Risk Assessments", "Annual Physical Exams", "Wellness Counseling", "Prescription Review"],
+        active: true,
+        order: 1
+      },
+      {
+        name: "Diabetes & Endocrine Care",
+        description: "Personalized glycemic control, HbA1c monitoring, and dietary planning.",
+        fee: 1000,
+        icon: "Activity",
+        items: ["Glucose Monitoring", "HbA1c Target Setting", "Dietary Guidance", "Insulin Dose Adjustments"],
+        active: true,
+        order: 2
+      },
+      {
+        name: "Hypertension & Cardiovascular Health",
+        description: "Long-term blood pressure control and cardiovascular risk prevention.",
+        fee: 1000,
+        icon: "HeartPulse",
+        items: ["BP Monitoring", "EKG Test Review", "Lipid Management", "Cardiovascular Risk Reduction"],
+        active: true,
+        order: 3
+      },
+      {
+        name: "Respiratory Disease Management",
+        description: "Treatment for asthma, COPD, bronchitis, and persistent respiratory symptoms.",
+        fee: 1000,
+        icon: "ShieldCheck",
+        items: ["Asthma & COPD Review", "Inhaler Technique Check", "Spirometry Review", "Allergy Management"],
+        active: true,
+        order: 4
+      }
     ]);
 
     // 10. Sample Incomes & Expenses

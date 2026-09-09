@@ -274,6 +274,7 @@ type ServiceRecord = {
   fee?: number;
   image?: string;
   icon?: string;
+  items?: string[];
   active?: boolean;
   order?: number;
 };
@@ -6330,6 +6331,13 @@ export function AdminPanel() {
                   Number(
                     (form.elements.namedItem("fee") as HTMLInputElement).value,
                   ) || 1000;
+                const rawItems =
+                  (form.elements.namedItem("items") as HTMLInputElement)?.value ||
+                  "";
+                const items = rawItems
+                  .split(/,|\n/)
+                  .map((s) => s.trim())
+                  .filter(Boolean);
                 const image = editingService?.image || "";
 
                 try {
@@ -6347,6 +6355,7 @@ export function AdminPanel() {
                       name,
                       description,
                       fee,
+                      items,
                       image,
                       active: true,
                     }),
@@ -6394,6 +6403,21 @@ export function AdminPanel() {
                   name="fee"
                   type="number"
                   defaultValue={editingService?.fee || 1000}
+                  className="border-slate-800 bg-slate-950 text-slate-200"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">
+                  Checklist / Features (comma separated)
+                </label>
+                <Input
+                  name="items"
+                  defaultValue={
+                    Array.isArray(editingService?.items)
+                      ? editingService.items.join(", ")
+                      : ""
+                  }
+                  placeholder="e.g. Risk Assessments, Physical Exams, Wellness Counseling"
                   className="border-slate-800 bg-slate-950 text-slate-200"
                 />
               </div>

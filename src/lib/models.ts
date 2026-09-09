@@ -294,6 +294,7 @@ const ServiceSchema = new Schema(
     fee: { type: Number, default: 0 },
     image: { type: String, default: "" },
     icon: { type: String, default: "" },
+    items: [{ type: String }],
     active: { type: Boolean, default: true },
     order: { type: Number, default: 0 }
   },

@@ -68,28 +68,31 @@ export function ProfileDetails({
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {doctor.medicalServices.map((service, index) => {
+            {(doctor.medicalServices && doctor.medicalServices.length > 0 ? doctor.medicalServices : []).map((service, index) => {
               const Icon = serviceIcons[index % serviceIcons.length];
+              const serviceTitle = service.title || (service as any).name || "Medical Service";
               return (
                 <div
-                  key={service.title}
+                  key={`${serviceTitle}-${index}`}
                   className="flex flex-col justify-between rounded-2xl border border-line bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg duration-300"
                 >
                   <div>
                     <span className="grid size-12 place-items-center rounded-full bg-band text-ink border border-line">
                       <Icon className="h-6 w-6 text-blue" />
                     </span>
-                    <h3 className="mt-5 text-xl font-bold text-ink">{service.title}</h3>
+                    <h3 className="mt-5 text-xl font-bold text-ink">{serviceTitle}</h3>
                     <p className="mt-3 text-sm leading-relaxed text-muted">{service.description}</p>
                   </div>
-                  <ul className="mt-5 space-y-2 border-t border-line pt-4 text-xs font-medium text-[#474747]">
-                    {service.items.map((item) => (
-                      <li key={item} className="flex items-center gap-2">
-                        <span className="grid size-3.5 place-items-center rounded-full bg-blue text-[7px] text-white shrink-0">✓</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {Array.isArray(service.items) && service.items.length > 0 && (
+                    <ul className="mt-5 space-y-2 border-t border-line pt-4 text-xs font-medium text-[#474747]">
+                      {service.items.map((item, itemIdx) => (
+                        <li key={`${item}-${itemIdx}`} className="flex items-center gap-2">
+                          <span className="grid size-3.5 place-items-center rounded-full bg-blue text-[7px] text-white shrink-0">✓</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               );
             })}
