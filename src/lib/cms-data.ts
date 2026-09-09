@@ -32,18 +32,16 @@ function asNumber(value: unknown, fallback = 0) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
-function asStringArray(value: unknown, fallback: string[] = []) {
+function asStringArray(value: unknown, fallback: string[] = []): string[] {
   if (!Array.isArray(value)) return fallback;
 
-  const items = value
+  return value
     .map((item) => {
       if (typeof item === "string") return item;
       const record = typeof item === "object" && item !== null ? (item as Record<string, unknown>) : {};
       return asString(record.value, asString(record.label));
     })
     .filter((item) => item.length > 0);
-
-  return items.length > 0 ? items : fallback;
 }
 
 function asDateString(value: unknown, fallback = new Date().toISOString()) {
@@ -85,9 +83,9 @@ function mapDoctor(item: MongoDocument | null): Doctor {
     medicalRegistrationNumber: asString(item.medicalRegistrationNumber, doctor.medicalRegistrationNumber),
     yearsOfExperience: asNumber(item.yearsOfExperience, doctor.yearsOfExperience ?? 0),
     onlineConsultationFee: asNumber(item.onlineConsultationFee, doctor.onlineConsultationFee ?? 0),
-    languages: asStringArray(item.languages, doctor.languages),
-    certifications: asStringArray(item.certifications, doctor.certifications),
-    hospitalAffiliations: asStringArray(item.hospitalAffiliations, doctor.hospitalAffiliations),
+    languages: Array.isArray(item.languages) ? asStringArray(item.languages, doctor.languages ?? []) : (doctor.languages ?? []),
+    certifications: Array.isArray(item.certifications) ? asStringArray(item.certifications, doctor.certifications ?? []) : (doctor.certifications ?? []),
+    hospitalAffiliations: Array.isArray(item.hospitalAffiliations) ? asStringArray(item.hospitalAffiliations, doctor.hospitalAffiliations ?? []) : (doctor.hospitalAffiliations ?? []),
     contactInformation: asString(item.contactInformation, doctor.contactInformation),
     socialLinks:
       typeof item.socialLinks === "object" && item.socialLinks !== null
@@ -103,11 +101,17 @@ function mapDoctor(item: MongoDocument | null): Doctor {
         ? item.heroStats.map((stat) => stat as { label: string; value: string })
         : doctor.heroStats,
     aboutHeading: asString(item.aboutHeading, doctor.aboutHeading),
-    aboutBio: asStringArray(item.aboutBio, doctor.aboutBio),
+    aboutBio: Array.isArray(item.aboutBio) ? asStringArray(item.aboutBio, doctor.aboutBio) : doctor.aboutBio,
     aboutImageUrl: asString(item.aboutImageUrl, doctor.aboutImageUrl),
     expertiseCards:
       Array.isArray(item.expertiseCards) && item.expertiseCards.length > 0
-        ? item.expertiseCards.map((card) => card as { title: string; items: string[] })
+        ? item.expertiseCards.map((card) => {
+            const c = typeof card === "object" && card !== null ? (card as Record<string, unknown>) : {};
+            return {
+              title: asString(c.title, "Specialization"),
+              items: asStringArray(c.items, [])
+            };
+          })
         : doctor.expertiseCards,
     medicalServices:
       Array.isArray(item.medicalServices) && item.medicalServices.length > 0
@@ -118,11 +122,11 @@ function mapDoctor(item: MongoDocument | null): Doctor {
     whatsapp: asString(item.whatsapp, doctor.whatsapp),
     address: asString(item.address, doctor.address),
     image: asString(item.image, doctor.image),
-    qualifications: asStringArray(item.qualifications, doctor.qualifications),
-    specialisations: asStringArray(item.specialisations, doctor.specialisations),
-    experience: asStringArray(item.experience, doctor.experience),
-    awards: asStringArray(item.awards, doctor.awards),
-    services: asStringArray(item.services, doctor.services),
+    qualifications: Array.isArray(item.qualifications) ? asStringArray(item.qualifications, doctor.qualifications ?? []) : (doctor.qualifications ?? []),
+    specialisations: Array.isArray(item.specialisations) ? asStringArray(item.specialisations, doctor.specialisations ?? []) : (doctor.specialisations ?? []),
+    experience: Array.isArray(item.experience) ? asStringArray(item.experience, doctor.experience ?? []) : (doctor.experience ?? []),
+    awards: Array.isArray(item.awards) ? asStringArray(item.awards, doctor.awards ?? []) : (doctor.awards ?? []),
+    services: Array.isArray(item.services) ? asStringArray(item.services, doctor.services ?? []) : (doctor.services ?? []),
     seo: mapSeo(item.seo, doctor.seo)
   };
 }

@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Award,
   BookOpen,
+  BriefcaseBusiness,
   Building2,
   Calendar,
   CalendarCheck,
@@ -31,6 +32,7 @@ import {
   FileText,
   Filter,
   Globe,
+  GraduationCap,
   HelpCircle,
   Hospital,
   Image as ImageIcon,
@@ -142,6 +144,8 @@ export type AdminTab =
   | "schedules"
   | "patients"
   | "cms-doctor"
+  | "cms-expertise"
+  | "cms-credentials"
   | "cms-website"
   | "cms-blog"
   | "cms-services"
@@ -1214,6 +1218,34 @@ export function AdminPanel() {
               >
                 <User className="h-4 w-4 text-violet-400" />
                 <span>Doctor Profile</span>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab("cms-expertise");
+                  setMobileMenuOpen(false);
+                }}
+                className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
+                  activeTab === "cms-expertise"
+                    ? "bg-teal-500/15 text-teal-300 font-semibold border border-teal-500/30"
+                    : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+                }`}
+              >
+                <GraduationCap className="h-4 w-4 text-emerald-400" />
+                <span>Expertise & Highlights</span>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab("cms-credentials");
+                  setMobileMenuOpen(false);
+                }}
+                className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
+                  activeTab === "cms-credentials"
+                    ? "bg-teal-500/15 text-teal-300 font-semibold border border-teal-500/30"
+                    : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+                }`}
+              >
+                <Award className="h-4 w-4 text-amber-400" />
+                <span>Doctor Credentials</span>
               </button>
               <button
                 onClick={() => {
@@ -2510,6 +2542,42 @@ export function AdminPanel() {
                     </Button>
                   </div>
 
+                  <div className="rounded-2xl border border-teal-500/20 bg-teal-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="grid size-9 place-items-center rounded-xl bg-teal-500/20 text-teal-300 shrink-0">
+                        <Sparkles className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-white">Looking for Highlight Cards & Credentials?</p>
+                        <p className="text-[11px] text-slate-400">
+                          Education, Experience, Publications cards & Qualifications, Specialisations, Languages, etc. now have dedicated menus in the sidebar.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setActiveTab("cms-expertise")}
+                        className="border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-teal-300 text-xs gap-1.5 h-8 rounded-xl"
+                      >
+                        <GraduationCap className="h-3.5 w-3.5" />
+                        <span>Expertise Cards</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setActiveTab("cms-credentials")}
+                        className="border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-amber-300 text-xs gap-1.5 h-8 rounded-xl"
+                      >
+                        <Award className="h-3.5 w-3.5" />
+                        <span>Credentials</span>
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* General Information */}
                     <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-4">
@@ -2954,6 +3022,753 @@ export function AdminPanel() {
                         </div>
                       </div>
                     </Card>
+                  </div>
+                </div>
+              )}
+
+              {/* ================= 6B. CMS: EXPERTISE & HIGHLIGHTS TAB (Image 1) ================= */}
+              {activeTab === "cms-expertise" && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <GraduationCap className="h-5 w-5 text-emerald-400" />
+                        <span>Expertise & Career Highlights (Cards)</span>
+                      </h2>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Manage highlight cards displayed on the doctor profile (Education, Experience, Publications, etc.)
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const current = Array.isArray(doctorProfile.expertiseCards)
+                            ? [...doctorProfile.expertiseCards]
+                            : [];
+                          setDoctorProfile({
+                            ...doctorProfile,
+                            expertiseCards: [
+                              ...current,
+                              {
+                                title: "New Highlight Category",
+                                items: ["Key accomplishment or detail point"],
+                              },
+                            ],
+                          });
+                        }}
+                        size="sm"
+                        variant="outline"
+                        className="border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-teal-300 hover:text-white rounded-xl text-xs gap-1.5 font-semibold"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add Card</span>
+                      </Button>
+
+                      <Button
+                        onClick={async () => {
+                          setSaving(true);
+                          try {
+                            const res = await fetch("/api/admin/doctor", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(doctorProfile),
+                            });
+                            if (!res.ok) throw new Error("Save failed");
+                            triggerToast(
+                              "Expertise & Highlight cards saved successfully!",
+                            );
+                          } catch (err: any) {
+                            triggerToast(err.message, true);
+                          } finally {
+                            setSaving(false);
+                          }
+                        }}
+                        disabled={saving}
+                        size="sm"
+                        className="bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white rounded-xl text-xs gap-1.5 font-semibold px-4 py-2"
+                      >
+                        <Check className="h-4 w-4" />
+                        <span>{saving ? "Saving..." : "Save Changes"}</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Card Editors */}
+                  {(!Array.isArray(doctorProfile.expertiseCards) ||
+                    doctorProfile.expertiseCards.length === 0) ? (
+                    <Card className="border-slate-800 bg-slate-900/80 p-8 rounded-2xl text-center space-y-4">
+                      <div className="mx-auto grid size-12 place-items-center rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <GraduationCap className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-white">
+                          No Highlight Cards Found
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                          Highlight cards showcase Education, Clinical Experience, Publications, and Special Highlights.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          setDoctorProfile({
+                            ...doctorProfile,
+                            expertiseCards: [
+                              {
+                                title: "Education",
+                                items: [
+                                  "MBBS - Dhaka Medical College",
+                                  "FCPS Medicine - BCPS",
+                                  "MD Internal Medicine - BSMMU",
+                                ],
+                              },
+                              {
+                                title: "Experience",
+                                items: [
+                                  "15+ years in Internal Medicine clinical practice",
+                                  "Former Registrar at a Tertiary Hospital",
+                                  "Clinical Professor and Mentor",
+                                ],
+                              },
+                              {
+                                title: "Publications",
+                                items: [
+                                  "50+ Articles in peer-reviewed clinical journals",
+                                  "Author of patient education guides",
+                                  "Keynote Speaker at National Medical Conferences",
+                                ],
+                              },
+                            ],
+                          });
+                        }}
+                        size="sm"
+                        className="bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-semibold gap-1.5"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Load Default 3 Cards (Education, Experience, Publications)</span>
+                      </Button>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {doctorProfile.expertiseCards.map(
+                        (card: any, cardIdx: number) => (
+                          <Card
+                            key={cardIdx}
+                            className="border-slate-800 bg-slate-900/80 p-5 rounded-2xl space-y-4 flex flex-col justify-between shadow-sm"
+                          >
+                            <div className="space-y-4">
+                              {/* Card Top / Title */}
+                              <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                                <div className="flex items-center gap-2 flex-1">
+                                  <span className="grid size-7 place-items-center rounded-lg bg-teal-500/10 text-teal-400 border border-teal-500/20 font-bold text-xs shrink-0">
+                                    #{cardIdx + 1}
+                                  </span>
+                                  <div className="flex-1">
+                                    <label className="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">
+                                      Card Title
+                                    </label>
+                                    <Input
+                                      value={card.title || ""}
+                                      onChange={(e) => {
+                                        const updated = [
+                                          ...doctorProfile.expertiseCards,
+                                        ];
+                                        updated[cardIdx] = {
+                                          ...updated[cardIdx],
+                                          title: e.target.value,
+                                        };
+                                        setDoctorProfile({
+                                          ...doctorProfile,
+                                          expertiseCards: updated,
+                                        });
+                                      }}
+                                      placeholder="e.g. Education, Experience..."
+                                      className="border-slate-800 bg-slate-950 text-slate-100 font-semibold text-xs h-8"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1 pt-3">
+                                  {cardIdx > 0 && (
+                                    <button
+                                      type="button"
+                                      title="Move Left/Up"
+                                      onClick={() => {
+                                        const updated = [
+                                          ...doctorProfile.expertiseCards,
+                                        ];
+                                        const temp = updated[cardIdx - 1];
+                                        updated[cardIdx - 1] = updated[cardIdx];
+                                        updated[cardIdx] = temp;
+                                        setDoctorProfile({
+                                          ...doctorProfile,
+                                          expertiseCards: updated,
+                                        });
+                                      }}
+                                      className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                                    >
+                                      <ChevronDown className="h-3.5 w-3.5 rotate-180" />
+                                    </button>
+                                  )}
+                                  {cardIdx <
+                                    doctorProfile.expertiseCards.length - 1 && (
+                                    <button
+                                      type="button"
+                                      title="Move Right/Down"
+                                      onClick={() => {
+                                        const updated = [
+                                          ...doctorProfile.expertiseCards,
+                                        ];
+                                        const temp = updated[cardIdx + 1];
+                                        updated[cardIdx + 1] = updated[cardIdx];
+                                        updated[cardIdx] = temp;
+                                        setDoctorProfile({
+                                          ...doctorProfile,
+                                          expertiseCards: updated,
+                                        });
+                                      }}
+                                      className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                                    >
+                                      <ChevronDown className="h-3.5 w-3.5" />
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    title="Delete Card"
+                                    onClick={() => {
+                                      const updated =
+                                        doctorProfile.expertiseCards.filter(
+                                          (_: any, i: number) => i !== cardIdx,
+                                        );
+                                      setDoctorProfile({
+                                        ...doctorProfile,
+                                        expertiseCards: updated,
+                                      });
+                                    }}
+                                    className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Bullet Points */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                    Bullet Points (
+                                    {Array.isArray(card.items)
+                                      ? card.items.length
+                                      : 0}
+                                    )
+                                  </label>
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <Input
+                                    id={`expertise-bullet-input-${cardIdx}`}
+                                    placeholder="Type point and press Enter..."
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        const val = (
+                                          e.target as HTMLInputElement
+                                        ).value.trim();
+                                        if (val) {
+                                          const updated = [
+                                            ...doctorProfile.expertiseCards,
+                                          ];
+                                          const items = Array.isArray(
+                                            updated[cardIdx].items,
+                                          )
+                                            ? [...updated[cardIdx].items]
+                                            : [];
+                                          items.push(val);
+                                          updated[cardIdx] = {
+                                            ...updated[cardIdx],
+                                            items,
+                                          };
+                                          setDoctorProfile({
+                                            ...doctorProfile,
+                                            expertiseCards: updated,
+                                          });
+                                          (
+                                            e.target as HTMLInputElement
+                                          ).value = "";
+                                        }
+                                      }
+                                    }}
+                                    className="border-slate-800 bg-slate-950 text-slate-200 text-xs h-8"
+                                  />
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => {
+                                      const input = document.getElementById(
+                                        `expertise-bullet-input-${cardIdx}`,
+                                      ) as HTMLInputElement;
+                                      if (input && input.value.trim()) {
+                                        const updated = [
+                                          ...doctorProfile.expertiseCards,
+                                        ];
+                                        const items = Array.isArray(
+                                          updated[cardIdx].items,
+                                        )
+                                          ? [...updated[cardIdx].items]
+                                          : [];
+                                        items.push(input.value.trim());
+                                        updated[cardIdx] = {
+                                          ...updated[cardIdx],
+                                          items,
+                                        };
+                                        setDoctorProfile({
+                                          ...doctorProfile,
+                                          expertiseCards: updated,
+                                        });
+                                        input.value = "";
+                                      }
+                                    }}
+                                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 h-8 px-2.5 rounded-lg text-xs"
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+
+                                <div className="space-y-1.5 pt-1 max-h-56 overflow-y-auto pr-1">
+                                  {Array.isArray(card.items) &&
+                                  card.items.length > 0 ? (
+                                    card.items.map(
+                                      (item: string, itemIdx: number) => (
+                                        <div
+                                          key={itemIdx}
+                                          className="flex items-center gap-2 rounded-lg border border-slate-800/80 bg-slate-950/60 px-2 py-1.5 text-xs text-slate-200 group"
+                                        >
+                                          <span className="grid size-4 place-items-center rounded-full bg-blue-500/20 text-blue-400 shrink-0 text-[9px] font-bold">
+                                            ✓
+                                          </span>
+                                          <input
+                                            type="text"
+                                            value={item}
+                                            onChange={(e) => {
+                                              const updated = [
+                                                ...doctorProfile.expertiseCards,
+                                              ];
+                                              const items = [
+                                                ...updated[cardIdx].items,
+                                              ];
+                                              items[itemIdx] = e.target.value;
+                                              updated[cardIdx] = {
+                                                ...updated[cardIdx],
+                                                items,
+                                              };
+                                              setDoctorProfile({
+                                                ...doctorProfile,
+                                                expertiseCards: updated,
+                                              });
+                                            }}
+                                            className="flex-1 bg-transparent border-none text-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-teal-500/50 rounded px-1"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const updated = [
+                                                ...doctorProfile.expertiseCards,
+                                              ];
+                                              const items = updated[
+                                                cardIdx
+                                              ].items.filter(
+                                                (_: any, i: number) =>
+                                                  i !== itemIdx,
+                                              );
+                                              updated[cardIdx] = {
+                                                ...updated[cardIdx],
+                                                items,
+                                              };
+                                              setDoctorProfile({
+                                                ...doctorProfile,
+                                                expertiseCards: updated,
+                                              });
+                                            }}
+                                            className="opacity-60 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-red-400 transition"
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      ),
+                                    )
+                                  ) : (
+                                    <p className="text-[11px] text-slate-400 italic py-1">
+                                      No bullet items yet. Add one above.
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        ),
+                      )}
+                    </div>
+                  )}
+
+                  {/* Live Visual Preview Section */}
+                  <div className="mt-8 pt-6 border-t border-slate-800">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                          <Eye className="h-4 w-4 text-teal-400" />
+                          <span>Live Public Website Preview (Image 1)</span>
+                        </h3>
+                        <p className="text-xs text-slate-400">
+                          Real-time view matching public landing page styling
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-line bg-[#fbf9f4] p-6">
+                      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {Array.isArray(doctorProfile.expertiseCards) &&
+                          doctorProfile.expertiseCards.map(
+                            (card: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="rounded-2xl border border-line bg-white p-6 shadow-sm"
+                              >
+                                <span className="grid size-11 place-items-center rounded-full bg-[#f4ede4] text-[#1c1c1c] border border-line">
+                                  <GraduationCap className="h-5 w-5 text-blue" />
+                                </span>
+                                <h3 className="mt-4 text-lg font-bold text-ink">
+                                  {card.title || "Category"}
+                                </h3>
+                                <ul className="mt-4 space-y-2.5 text-xs font-medium text-muted">
+                                  {Array.isArray(card.items) &&
+                                    card.items.map((item: string, i: number) => (
+                                      <li
+                                        key={i}
+                                        className="flex items-start gap-2"
+                                      >
+                                        <span className="mt-0.5 grid size-3.5 place-items-center rounded-full bg-blue text-[7px] text-white shrink-0">
+                                          ✓
+                                        </span>
+                                        <span className="leading-snug">
+                                          {item}
+                                        </span>
+                                      </li>
+                                    ))}
+                                </ul>
+                              </div>
+                            ),
+                          )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ================= 6C. CMS: DOCTOR CREDENTIALS TAB (Image 2) ================= */}
+              {activeTab === "cms-credentials" && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Award className="h-5 w-5 text-amber-400" />
+                        <span>Doctor Credentials & Background</span>
+                      </h2>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Manage all 7 clinical credential categories: Qualifications, Specialisations, Languages, Certifications, Hospital Affiliations, Experience, and Awards
+                      </p>
+                    </div>
+
+                    <Button
+                      onClick={async () => {
+                        setSaving(true);
+                        try {
+                          const res = await fetch("/api/admin/doctor", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(doctorProfile),
+                          });
+                          if (!res.ok) throw new Error("Save failed");
+                          triggerToast(
+                            "Doctor credentials updated successfully in MongoDB!",
+                          );
+                        } catch (err: any) {
+                          triggerToast(err.message, true);
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                      disabled={saving}
+                      size="sm"
+                      className="bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white rounded-xl text-xs gap-1.5 font-semibold px-4 py-2"
+                    >
+                      <Check className="h-4 w-4" />
+                      <span>{saving ? "Saving..." : "Save Changes"}</span>
+                    </Button>
+                  </div>
+
+                  {/* 7 Credential Categories Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {[
+                      {
+                        key: "qualifications",
+                        title: "Qualifications",
+                        icon: GraduationCap,
+                        color: "text-blue-400",
+                        desc: "Academic degrees, fellowships, and diplomas",
+                        placeholder: "e.g. MBBS (DMC), FCPS (Medicine)...",
+                      },
+                      {
+                        key: "specialisations",
+                        title: "Specialisations",
+                        icon: Stethoscope,
+                        color: "text-teal-400",
+                        desc: "Clinical specialties and focus areas",
+                        placeholder: "e.g. Diabetes Management...",
+                      },
+                      {
+                        key: "languages",
+                        title: "Languages Spoken",
+                        icon: Globe,
+                        color: "text-sky-400",
+                        desc: "Languages for patient consultations",
+                        placeholder: "e.g. Bangla, English, Hindi...",
+                      },
+                      {
+                        key: "certifications",
+                        title: "Certifications",
+                        icon: ShieldCheck,
+                        color: "text-emerald-400",
+                        desc: "Board certifications and medical licenses",
+                        placeholder: "e.g. Board Certified - ACLS...",
+                      },
+                      {
+                        key: "hospitalAffiliations",
+                        title: "Hospital Affiliations",
+                        icon: Hospital,
+                        color: "text-indigo-400",
+                        desc: "Associated hospitals and chambers",
+                        placeholder: "e.g. City Care Hospital...",
+                      },
+                      {
+                        key: "experience",
+                        title: "Professional Experience",
+                        icon: BriefcaseBusiness,
+                        color: "text-violet-400",
+                        desc: "Clinical tenures and medical roles",
+                        placeholder: "e.g. 15+ Years Clinical Practice...",
+                      },
+                      {
+                        key: "awards",
+                        title: "Honors & Awards",
+                        icon: Award,
+                        color: "text-amber-400",
+                        desc: "Recognitions and clinical honors",
+                        placeholder: "e.g. Best Clinical Service Award 2022...",
+                      },
+                    ].map((cat) => {
+                      const Icon = cat.icon;
+                      const currentList: string[] = Array.isArray(
+                        doctorProfile[cat.key],
+                      )
+                        ? doctorProfile[cat.key]
+                        : [];
+
+                      return (
+                        <Card
+                          key={cat.key}
+                          className="border-slate-800 bg-slate-900/80 p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-sm"
+                        >
+                          <div className="space-y-3">
+                            {/* Category Header */}
+                            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="grid size-8 place-items-center rounded-lg bg-slate-800 text-slate-200">
+                                  <Icon className={`h-4 w-4 ${cat.color}`} />
+                                </div>
+                                <div>
+                                  <h3 className="text-xs font-bold text-white uppercase tracking-wide">
+                                    {cat.title}
+                                  </h3>
+                                  <p className="text-[10px] text-slate-400 leading-tight">
+                                    {cat.desc}
+                                  </p>
+                                </div>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] border-slate-700 text-slate-300 shrink-0"
+                              >
+                                {currentList.length}
+                              </Badge>
+                            </div>
+
+                            {/* Add item input */}
+                            <div className="flex gap-2">
+                              <Input
+                                id={`cred-input-${cat.key}`}
+                                placeholder={cat.placeholder}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    const val = (
+                                      e.target as HTMLInputElement
+                                    ).value.trim();
+                                    if (val) {
+                                      const updated = [...currentList, val];
+                                      setDoctorProfile({
+                                        ...doctorProfile,
+                                        [cat.key]: updated,
+                                      });
+                                      (
+                                        e.target as HTMLInputElement
+                                      ).value = "";
+                                    }
+                                  }
+                                }}
+                                className="border-slate-800 bg-slate-950 text-slate-200 text-xs h-8"
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => {
+                                  const input = document.getElementById(
+                                    `cred-input-${cat.key}`,
+                                  ) as HTMLInputElement;
+                                  if (input && input.value.trim()) {
+                                    const updated = [
+                                      ...currentList,
+                                      input.value.trim(),
+                                    ];
+                                    setDoctorProfile({
+                                      ...doctorProfile,
+                                      [cat.key]: updated,
+                                    });
+                                    input.value = "";
+                                  }
+                                }}
+                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 h-8 px-2.5 rounded-lg text-xs"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+
+                            {/* Items List */}
+                            <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                              {currentList.length > 0 ? (
+                                currentList.map(
+                                  (item: string, itemIdx: number) => (
+                                    <div
+                                      key={itemIdx}
+                                      className="flex items-center gap-2 rounded-lg border border-slate-800/80 bg-slate-950/60 px-2 py-1.5 text-xs text-slate-200 group"
+                                    >
+                                      <CheckCircle2 className="h-3.5 w-3.5 text-teal-400 shrink-0" />
+                                      <input
+                                        type="text"
+                                        value={item}
+                                        onChange={(e) => {
+                                          const updated = [...currentList];
+                                          updated[itemIdx] = e.target.value;
+                                          setDoctorProfile({
+                                            ...doctorProfile,
+                                            [cat.key]: updated,
+                                          });
+                                        }}
+                                        className="flex-1 bg-transparent border-none text-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-teal-500/50 rounded px-1"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const updated = currentList.filter(
+                                            (_: string, i: number) =>
+                                              i !== itemIdx,
+                                          );
+                                          setDoctorProfile({
+                                            ...doctorProfile,
+                                            [cat.key]: updated,
+                                          });
+                                        }}
+                                        className="opacity-60 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-red-400 transition"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ),
+                                )
+                              ) : (
+                                <p className="text-[11px] text-slate-400 italic py-1">
+                                  No entries yet. Add one above.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+
+                  {/* Live Visual Preview Section */}
+                  <div className="mt-8 pt-6 border-t border-slate-800">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                          <Eye className="h-4 w-4 text-teal-400" />
+                          <span>Live Public Website Preview (Image 2)</span>
+                        </h3>
+                        <p className="text-xs text-slate-400">
+                          Real-time 7-category credentials layout as displayed on the live profile
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-line bg-[#fbf9f4] p-6">
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        {[
+                          [
+                            "QUALIFICATIONS",
+                            doctorProfile.qualifications || [],
+                          ],
+                          [
+                            "SPECIALISATIONS",
+                            doctorProfile.specialisations || [],
+                          ],
+                          ["LANGUAGES SPOKEN", doctorProfile.languages || []],
+                          ["CERTIFICATIONS", doctorProfile.certifications || []],
+                          [
+                            "HOSPITAL AFFILIATIONS",
+                            doctorProfile.hospitalAffiliations || [],
+                          ],
+                          [
+                            "PROFESSIONAL EXPERIENCE",
+                            doctorProfile.experience || [],
+                          ],
+                          ["HONORS & AWARDS", doctorProfile.awards || []],
+                        ].map(([title, items]: any) =>
+                          items.length > 0 ? (
+                            <div
+                              key={title}
+                              className="rounded-2xl border border-line bg-white/90 p-5 shadow-sm"
+                            >
+                              <h3 className="text-xs font-bold uppercase tracking-wide text-ink">
+                                {title}
+                              </h3>
+                              <ul className="mt-3 space-y-2 text-xs text-muted">
+                                {items.map((item: string, i: number) => (
+                                  <li
+                                    key={i}
+                                    className="flex items-start gap-2"
+                                  >
+                                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue" />
+                                    <span className="leading-snug">{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null,
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

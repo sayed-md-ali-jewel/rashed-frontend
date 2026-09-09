@@ -142,43 +142,51 @@ export function ProfileDetails({
           </div>
 
           {/* Expertise Cards */}
-          <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {doctor.expertiseCards.map((card, index) => {
-              const Icon = expertiseIcons[index % expertiseIcons.length];
-              return (
-                <div
-                  key={card.title}
-                  className="rounded-2xl border border-line bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg duration-300"
-                >
-                  <span className="grid size-11 place-items-center rounded-full bg-band text-ink border border-line">
-                    <Icon className="h-5 w-5 text-blue" />
-                  </span>
-                  <h3 className="mt-4 text-lg font-bold text-ink">{card.title}</h3>
-                  <ul className="mt-4 space-y-2.5 text-xs font-medium text-muted">
-                    {card.items.map((item) => (
-                      <li key={item} className="flex items-start gap-2">
-                        <span className="mt-0.5 grid size-3.5 place-items-center rounded-full bg-blue text-[7px] text-white shrink-0">✓</span>
-                        <span className="leading-snug">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
+          {doctor.expertiseCards && doctor.expertiseCards.length > 0 && (
+            <div className={`mt-16 grid gap-6 ${
+              doctor.expertiseCards.length === 3
+                ? "md:grid-cols-3"
+                : doctor.expertiseCards.length === 2
+                ? "md:grid-cols-2"
+                : "md:grid-cols-2 lg:grid-cols-4"
+            }`}>
+              {doctor.expertiseCards.map((card, index) => {
+                const Icon = expertiseIcons[index % expertiseIcons.length];
+                return (
+                  <div
+                    key={`${card.title}-${index}`}
+                    className="rounded-2xl border border-line bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg duration-300"
+                  >
+                    <span className="grid size-11 place-items-center rounded-full bg-band text-ink border border-line">
+                      <Icon className="h-5 w-5 text-blue" />
+                    </span>
+                    <h3 className="mt-4 text-lg font-bold text-ink">{card.title}</h3>
+                    <ul className="mt-4 space-y-2.5 text-xs font-medium text-muted">
+                      {(card.items || []).map((item, itemIdx) => (
+                        <li key={`${item}-${itemIdx}`} className="flex items-start gap-2">
+                          <span className="mt-0.5 grid size-3.5 place-items-center rounded-full bg-blue text-[7px] text-white shrink-0">✓</span>
+                          <span className="leading-snug">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Credentials Blocks */}
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {blocks.map(([title, items]) => (
-              items.length > 0 ? (
+              items && items.length > 0 ? (
                 <div
                   key={title}
                   className="rounded-2xl border border-line bg-white/90 p-5 shadow-sm transition hover:bg-white hover:shadow-md duration-200"
                 >
                   <h3 className="text-sm font-bold uppercase tracking-wide text-ink">{title}</h3>
                   <ul className="mt-3 space-y-2 text-xs text-muted">
-                    {items.map((item) => (
-                      <li key={item} className="flex items-start gap-2">
+                    {items.map((item, itemIdx) => (
+                      <li key={`${item}-${itemIdx}`} className="flex items-start gap-2">
                         <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue" />
                         <span className="leading-snug">{item}</span>
                       </li>
