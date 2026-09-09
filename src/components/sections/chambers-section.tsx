@@ -71,11 +71,11 @@ export function ChambersSection({
                   <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100 border-b border-line">
                     {hospital.image ? (
                       <img
-                        src={safeImageSrc(hospital.image, "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80")}
+                        src={safeImageSrc(hospital.image, "/placeholder.svg")}
                         alt={hospital.name}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         onError={(e) => {
-                          e.currentTarget.src = "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80";
+                          e.currentTarget.src = "/placeholder.svg";
                         }}
                       />
                     ) : (

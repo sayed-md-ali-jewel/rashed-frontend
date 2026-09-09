@@ -13,24 +13,9 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "drrashed.bd",
-        pathname: "/uploads/**",
-      },
-      {
-        protocol: "https",
-        hostname: "drrashed.bd",
-        pathname: "/**",
-      },
-      {
-        protocol: "http",
-        hostname: "localhost",
-        pathname: "/**",
-      },
-      {
-        protocol: "http",
-        hostname: "127.0.0.1",
-        pathname: "/**",
-      },
-    ],
+        pathname: "/uploads/**"
+      }
+    ]
   },
   async headers() {
     return [

@@ -92,8 +92,7 @@ export function FileUploadInput({
     value.match(/\.(jpeg|jpg|gif|png|webp|svg|avif|bmp|ico)($|\?)/i) ||
     value.startsWith("data:image/") ||
     value.startsWith("/uploads/") ||
-    value.includes("/uploads/") ||
-    value.includes("images.unsplash.com")
+    value.includes("/uploads/")
   );
 
   return (

@@ -103,7 +103,7 @@ export function connectServerUploadUrl(src?: string | null): string {
     return clean;
   }
 
-  // External full URLs that are NOT our uploads (e.g., Unsplash)
+  // External full URLs that are NOT our uploads
   const uploadsIdx = clean.indexOf("/uploads/");
   if (
     uploadsIdx === -1 &&
@@ -144,7 +144,7 @@ export function connectServerUploadUrl(src?: string | null): string {
  */
 export function safeImageSrc(
   src?: string | null,
-  fallback = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=1200&q=80"
+  fallback = "/placeholder.svg"
 ): string {
   if (!src || typeof src !== "string" || !src.trim()) {
     return fallback;

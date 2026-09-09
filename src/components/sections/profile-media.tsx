@@ -123,7 +123,7 @@ export function GalleryStrip({ gallery }: { gallery: GalleryItem[] }) {
         {gallery.map((item, index) => {
           const images = Array.isArray(item.images) && item.images.length > 0 ? item.images : [item.image].filter(Boolean);
           const photoCount = images.length;
-          const coverImage = safeImageSrc(item.image || images[0], "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80");
+          const coverImage = safeImageSrc(item.image || images[0], "/placeholder.svg");
 
           return (
             <button
@@ -140,7 +140,7 @@ export function GalleryStrip({ gallery }: { gallery: GalleryItem[] }) {
                       alt={item.alt || item.title || "Facility"}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       onError={(e) => {
-                        e.currentTarget.src = "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80";
+                        e.currentTarget.src = "/placeholder.svg";
                       }}
                     />
                   ) : (
@@ -222,11 +222,11 @@ export function GalleryStrip({ gallery }: { gallery: GalleryItem[] }) {
               {activeImage ? (
                 <div className="relative h-full w-full flex items-center justify-center">
                   <img
-                    src={safeImageSrc(activeImage, "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80")}
+                    src={safeImageSrc(activeImage, "/placeholder.svg")}
                     alt={activeClinic.alt || activeClinic.title || "Clinic image"}
                     className="max-h-[54vh] max-w-full object-contain rounded-lg"
                     onError={(e) => {
-                      e.currentTarget.src = "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80";
+                      e.currentTarget.src = "/placeholder.svg";
                     }}
                   />
                 </div>
@@ -278,11 +278,11 @@ export function GalleryStrip({ gallery }: { gallery: GalleryItem[] }) {
                       }`}
                     >
                       <img
-                        src={safeImageSrc(img, "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80")}
+                        src={safeImageSrc(img, "/placeholder.svg")}
                         alt={`Thumbnail ${idx + 1}`}
                         className="h-full w-full object-cover"
                         onError={(e) => {
-                          e.currentTarget.src = "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80";
+                          e.currentTarget.src = "/placeholder.svg";
                         }}
                       />
                     </button>

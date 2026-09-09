@@ -106,11 +106,11 @@ export function ProfileDetails({
           <div className="grid items-start gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
             <div className="relative overflow-hidden rounded-3xl border border-line bg-white shadow-md">
               <img
-                src={safeImageSrc(doctor.aboutImageUrl || doctor.image, "https://images.unsplash.com/photo-1584467735871-8f8eafa7f867?auto=format&fit=crop&w=1200&q=80")}
+                src={safeImageSrc(doctor.aboutImageUrl || doctor.image, "/placeholder.svg")}
                 alt={`${doctor.name || "Doctor"} professional portrait`}
                 className="aspect-[4/3] w-full object-cover object-top"
                 onError={(e) => {
-                  e.currentTarget.src = "https://images.unsplash.com/photo-1584467735871-8f8eafa7f867?auto=format&fit=crop&w=1200&q=80";
+                  e.currentTarget.src = "/placeholder.svg";
                 }}
               />
               <div className="p-6 bg-white border-t border-line">

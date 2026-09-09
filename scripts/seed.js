@@ -97,7 +97,7 @@ async function main() {
       phone: "+8801700000000",
       whatsapp: "+8801700000000",
       address: "Dhaka, Bangladesh",
-      image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=1200&q=80",
+      image: "/placeholder.svg",
       biography: "A patient-focused clinician providing evidence-based care across internal medicine, chronic disease management, preventive health, and diagnostic consultations.",
       heroBadge: "Board Certified Physician",
       heroIntro: "Compassionate healthcare focused on your wellness. Specializing in internal medicine with a holistic approach to patient care.",
@@ -115,7 +115,7 @@ async function main() {
         "My practice focuses on preventive care, chronic disease management, and helping patients achieve optimal health through evidence-based medicine combined with a holistic perspective.",
         "I support patients with practical follow-up plans, continuous monitoring, and clear communication."
       ],
-      aboutImageUrl: "https://images.unsplash.com/photo-1584467735871-8f8eafa7f867?auto=format&fit=crop&w=1200&q=80",
+      aboutImageUrl: "/placeholder.svg",
       languages: ["Bangla", "English", "Hindi"],
       certifications: [
         "Board Certification - Internal Medicine",
@@ -328,12 +328,9 @@ async function main() {
       title: "City Care Hospital Chamber",
       category: "Main Hospital",
       description: "Fully equipped executive consultation chamber with private examination suite and vitals monitoring station.",
-      image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80",
+      image: "/placeholder.svg",
       images: [
-        "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1582719471384-894fbb16e074?auto=format&fit=crop&w=1200&q=80"
+        "/placeholder.svg"
       ],
       alt: "City Care Hospital executive consultation suite",
       active: true
@@ -342,11 +339,9 @@ async function main() {
       title: "Green Life Clinic & Diagnostic",
       category: "Specialist Clinic",
       description: "Modern outpatient clinic featuring digital diagnostic support, patient waiting lounge, and ECG suite.",
-      image: "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=80",
+      image: "/placeholder.svg",
       images: [
-        "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=1200&q=80"
+        "/placeholder.svg"
       ],
       alt: "Green Life Clinic & Diagnostic center",
       active: true
@@ -355,11 +350,9 @@ async function main() {
       title: "Central Health Chamber & Lab",
       category: "Diagnostic Chamber",
       description: "Evening chamber setup with on-site sample collection, ultrasonic imaging, and dedicated patient care lounge.",
-      image: "https://images.unsplash.com/photo-1504813184591-01572f98c85f?auto=format&fit=crop&w=1200&q=80",
+      image: "/placeholder.svg",
       images: [
-        "https://images.unsplash.com/photo-1504813184591-01572f98c85f?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1512678080530-7760d81faba6?auto=format&fit=crop&w=1200&q=80"
+        "/placeholder.svg"
       ],
       alt: "Central Health Chamber and diagnostic lab",
       active: true

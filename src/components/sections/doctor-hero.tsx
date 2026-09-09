@@ -74,7 +74,7 @@ export function DoctorHero({ doctor, content }: { doctor: Doctor; content: Websi
               alt={doctor.name || "Doctor"}
               className="h-full w-full object-cover"
               onError={(e) => {
-                e.currentTarget.src = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=1200&q=80";
+                e.currentTarget.src = "/placeholder.svg";
               }}
             />
           </div>
