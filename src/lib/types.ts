@@ -137,6 +137,7 @@ export type GalleryItem = {
 
 export type WebsiteSetting = {
   siteName: string;
+  siteUrl?: string;
   logo?: string;
   logoDark?: string;
   favicon?: string;
@@ -150,6 +151,19 @@ export type WebsiteSetting = {
   xUrl?: string;
   youtubeUrl?: string;
   telegramUrl?: string;
+  // SEO & Webmasters
+  googleSearchConsoleVerification?: string;
+  googleAnalyticsId?: string;
+  googleTagManagerId?: string;
+  bingVerification?: string;
+  yandexVerification?: string;
+  facebookDomainVerification?: string;
+  customHeadScript?: string;
+  // Robots & Sitemap controls
+  allowIndexing?: boolean;
+  robotsTxtCustom?: string;
+  sitemapEnabled?: boolean;
+  disallowedPaths?: string[];
   defaultSeo?: SEOFields;
   content: {
     heroPrimaryCta: string;

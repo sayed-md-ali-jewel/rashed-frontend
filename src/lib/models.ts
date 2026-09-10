@@ -668,12 +668,26 @@ const SeoSettingSchema = new Schema(
 const WebsiteSettingSchema = new Schema(
   {
     siteName: { type: String, required: true, default: "Dr. Rashed" },
+    siteUrl: { type: String, default: "https://drrashed.bd" },
     logo: { type: String, default: "" },
     logoDark: { type: String, default: "" },
     favicon: { type: String, default: "" },
     appleTouchIcon: { type: String, default: "" },
     defaultSeo: { type: Schema.Types.Mixed, default: () => ({}) },
     seo: { type: Schema.Types.Mixed, default: () => ({}) },
+    // SEO & Webmasters
+    googleSearchConsoleVerification: { type: String, default: "" },
+    googleAnalyticsId: { type: String, default: "" },
+    googleTagManagerId: { type: String, default: "" },
+    bingVerification: { type: String, default: "" },
+    yandexVerification: { type: String, default: "" },
+    facebookDomainVerification: { type: String, default: "" },
+    customHeadScript: { type: String, default: "" },
+    // Robots & Sitemap controls
+    allowIndexing: { type: Boolean, default: true },
+    robotsTxtCustom: { type: String, default: "" },
+    sitemapEnabled: { type: Boolean, default: true },
+    disallowedPaths: [{ type: String }],
     facebookUrl: { type: String, default: "" },
     linkedinUrl: { type: String, default: "" },
     xUrl: { type: String, default: "" },

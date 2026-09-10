@@ -265,6 +265,7 @@ function mapWebsiteSetting(item: MongoDocument | null): WebsiteSetting {
 
   return {
     siteName: asString(item.siteName, websiteSetting.siteName),
+    siteUrl: asString(item.siteUrl, websiteSetting.siteUrl || ""),
     logo: asString(item.logo, websiteSetting.logo || ""),
     logoDark: asString(item.logoDark, websiteSetting.logoDark || ""),
     favicon: asString(item.favicon, websiteSetting.favicon || ""),
@@ -278,6 +279,19 @@ function mapWebsiteSetting(item: MongoDocument | null): WebsiteSetting {
     xUrl: asString(item.xUrl, websiteSetting.xUrl),
     youtubeUrl: asString(item.youtubeUrl, websiteSetting.youtubeUrl),
     telegramUrl: asString(item.telegramUrl, websiteSetting.telegramUrl),
+    googleSearchConsoleVerification: asString(item.googleSearchConsoleVerification, websiteSetting.googleSearchConsoleVerification || ""),
+    googleAnalyticsId: asString(item.googleAnalyticsId, websiteSetting.googleAnalyticsId || ""),
+    googleTagManagerId: asString(item.googleTagManagerId, websiteSetting.googleTagManagerId || ""),
+    bingVerification: asString(item.bingVerification, websiteSetting.bingVerification || ""),
+    yandexVerification: asString(item.yandexVerification, websiteSetting.yandexVerification || ""),
+    facebookDomainVerification: asString(item.facebookDomainVerification, websiteSetting.facebookDomainVerification || ""),
+    customHeadScript: asString(item.customHeadScript, websiteSetting.customHeadScript || ""),
+    allowIndexing: typeof item.allowIndexing === "boolean" ? item.allowIndexing : true,
+    robotsTxtCustom: asString(item.robotsTxtCustom, websiteSetting.robotsTxtCustom || ""),
+    sitemapEnabled: typeof item.sitemapEnabled === "boolean" ? item.sitemapEnabled : true,
+    disallowedPaths: Array.isArray(item.disallowedPaths)
+      ? asStringArray(item.disallowedPaths, ["/admin", "/api"])
+      : (websiteSetting.disallowedPaths || ["/admin", "/api"]),
     defaultSeo: mapSeo(
       item.defaultSeo,
       websiteSetting.defaultSeo ?? {

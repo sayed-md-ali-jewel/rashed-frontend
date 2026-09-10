@@ -187,8 +187,9 @@ async function main() {
     {},
     {
       siteName: "Dr. Rashed",
+      siteUrl: "https://drrashed.bd",
       contactPhone: "+8801700000000",
-      contactEmail: "appointments@doctorcare.test",
+      contactEmail: "appointments@drrashed.bd",
       contactAddress: "Dhaka, Bangladesh",
       footerDescription: "A modern doctor portfolio and appointment management system.",
       facebookUrl: "https://facebook.com/doctorcare",

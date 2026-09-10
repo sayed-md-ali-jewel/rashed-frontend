@@ -7,7 +7,9 @@ import {
   AlertCircle,
   AlertTriangle,
   Award,
+  BarChart3,
   BookOpen,
+  Bot,
   BriefcaseBusiness,
   Building2,
   Calendar,
@@ -16,10 +18,12 @@ import {
   Camera,
   Check,
   CheckCircle2,
+  CheckSquare,
   ChevronDown,
   ChevronRight,
   ClipboardList,
   Clock,
+  Code,
   Copy,
   Database,
   DollarSign,
@@ -28,6 +32,7 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  FileCode,
   FileSpreadsheet,
   FileText,
   Filter,
@@ -51,10 +56,12 @@ import {
   Plus,
   RefreshCw,
   Search,
+  SearchCheck,
   Send,
   Settings,
   Share2,
   ShieldCheck,
+  Sliders,
   Sparkles,
   Star,
   Stethoscope,
@@ -749,6 +756,11 @@ export function AdminPanel() {
 
   // Dedicated SEO Suite state
   const [seoScope, setSeoScope] = useState<"doctor" | "website">("doctor");
+  const [seoSubTab, setSeoSubTab] = useState<
+    "meta" | "gsc" | "analytics" | "sitemap" | "robots"
+  >("meta");
+  const [newDisallowPath, setNewDisallowPath] = useState("");
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [seoForm, setSeoForm] = useState<any>({
     seoTitle: "",
     metaDescription: "",
@@ -1182,7 +1194,7 @@ export function AdminPanel() {
     });
   };
 
-  // Save SEO Settings
+  // Save SEO & Webmaster Suite Settings
   const handleSaveSeo = async () => {
     setSaving(true);
     try {
@@ -1195,18 +1207,22 @@ export function AdminPanel() {
         });
         if (!res.ok) throw new Error("Failed to save doctor SEO");
         setDoctorProfile(updatedDoctor);
-        triggerToast("Doctor SEO settings saved successfully!");
-      } else {
-        const updatedWebsite = { ...websiteSettings, defaultSeo: seoForm };
-        const res = await fetch("/api/admin/website-setting", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedWebsite),
-        });
-        if (!res.ok) throw new Error("Failed to save website SEO");
-        setWebsiteSettings(updatedWebsite);
-        triggerToast("Website Global SEO settings saved successfully!");
       }
+
+      const updatedWebsite = {
+        ...websiteSettings,
+        ...(seoScope === "website" ? { defaultSeo: seoForm } : {}),
+      };
+      const webRes = await fetch("/api/admin/website-setting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedWebsite),
+      });
+      if (!webRes.ok) throw new Error("Failed to save website SEO & Webmaster settings");
+      setWebsiteSettings(updatedWebsite);
+
+      triggerToast("SEO & Webmaster settings saved successfully!");
+      loadAllData();
     } catch (err: any) {
       triggerToast(err.message, true);
     } finally {
@@ -4396,21 +4412,39 @@ export function AdminPanel() {
                         </div>
 
                         <div className="space-y-3 text-xs">
-                          <div>
-                            <label className="block text-slate-400 mb-1 font-medium">
-                              Website Brand Name
-                            </label>
-                            <Input
-                              value={websiteSettings.siteName || ""}
-                              onChange={(e) =>
-                                setWebsiteSettings({
-                                  ...websiteSettings,
-                                  siteName: e.target.value,
-                                })
-                              }
-                              className="border-slate-800 bg-slate-950 text-slate-200"
-                              placeholder="e.g. Dr. Rashed"
-                            />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-slate-400 mb-1 font-medium">
+                                Website Brand Name
+                              </label>
+                              <Input
+                                value={websiteSettings.siteName || ""}
+                                onChange={(e) =>
+                                  setWebsiteSettings({
+                                    ...websiteSettings,
+                                    siteName: e.target.value,
+                                  })
+                                }
+                                className="border-slate-800 bg-slate-950 text-slate-200"
+                                placeholder="e.g. Dr. Rashed"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-slate-400 mb-1 font-medium">
+                                Canonical Website URL
+                              </label>
+                              <Input
+                                value={websiteSettings.siteUrl || ""}
+                                onChange={(e) =>
+                                  setWebsiteSettings({
+                                    ...websiteSettings,
+                                    siteUrl: e.target.value,
+                                  })
+                                }
+                                className="border-slate-800 bg-slate-950 text-slate-200"
+                                placeholder="e.g. https://drrashed.bd"
+                              />
+                            </div>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -4970,348 +5004,1263 @@ export function AdminPanel() {
                 </div>
               )}
 
-              {/* ================= 11. INTERACTIVE SEO SUITE & EDITOR TAB ================= */}
+              {/* ================= 11. INTERACTIVE SEO SUITE & WEBMASTER CONTROL CENTER ================= */}
               {activeTab === "seo" && (
                 <div className="space-y-6">
+                  {/* Top Header & Save Action */}
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-xl font-bold text-white">
-                        SEO Suite & Live Meta Editor
-                      </h2>
-                      <p className="text-xs text-slate-400">
-                        Edit metadata, customize OpenGraph cards, and preview
-                        search engine appearance
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-6 w-6 text-teal-400" />
+                        <h2 className="text-xl font-bold text-white">
+                          SEO & Webmaster Suite
+                        </h2>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Manage Google Search Console, Google Analytics (GA4/GTM), XML Sitemap, Robots.txt, and live search engine previews
                       </p>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      {/* Scope Toggle */}
-                      <div className="flex rounded-xl border border-slate-800 bg-slate-950 p-1">
-                        <button
-                          type="button"
-                          onClick={() => setSeoScope("doctor")}
-                          className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                            seoScope === "doctor"
-                              ? "bg-teal-500 text-slate-950 shadow-md"
-                              : "text-slate-400 hover:text-slate-200"
-                          }`}
-                        >
-                          Doctor Profile SEO
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSeoScope("website")}
-                          className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                            seoScope === "website"
-                              ? "bg-teal-500 text-slate-950 shadow-md"
-                              : "text-slate-400 hover:text-slate-200"
-                          }`}
-                        >
-                          Website Global SEO
-                        </button>
-                      </div>
-
                       <Button
                         onClick={handleSaveSeo}
                         disabled={saving}
                         size="sm"
-                        className="bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white rounded-xl text-xs gap-1.5 font-semibold"
+                        className="bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white rounded-xl text-xs gap-1.5 font-semibold px-4 py-2 shadow-lg shadow-teal-500/20"
                       >
                         <Check className="h-4 w-4" />
-                        <span>{saving ? "Saving..." : "Save SEO"}</span>
+                        <span>{saving ? "Saving All Settings..." : "Save SEO Settings"}</span>
                       </Button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left: Interactive SEO Form */}
-                    <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <h3 className="font-bold text-white text-base flex items-center gap-2">
-                          <Edit className="h-4 w-4 text-teal-400" />
-                          <span>
-                            Editing:{" "}
-                            {seoScope === "doctor"
-                              ? "Doctor Profile SEO"
-                              : "Website Global SEO"}
-                          </span>
-                        </h3>
+                  {/* Sub-Navigation Tabs */}
+                  <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-800 bg-slate-950/80 p-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setSeoSubTab("meta")}
+                      className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+                        seoSubTab === "meta"
+                          ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-bold shadow-md"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                      }`}
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      <span>Metadata & Social Cards</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSeoSubTab("gsc")}
+                      className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+                        seoSubTab === "gsc"
+                          ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-bold shadow-md"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                      }`}
+                    >
+                      <SearchCheck className="h-3.5 w-3.5" />
+                      <span>Google Search Console</span>
+                      {websiteSettings.googleSearchConsoleVerification && (
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-emerald-950" />
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSeoSubTab("analytics")}
+                      className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+                        seoSubTab === "analytics"
+                          ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-bold shadow-md"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                      }`}
+                    >
+                      <BarChart3 className="h-3.5 w-3.5" />
+                      <span>Google Analytics & GTM</span>
+                      {websiteSettings.googleAnalyticsId && (
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-emerald-950" />
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSeoSubTab("sitemap")}
+                      className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+                        seoSubTab === "sitemap"
+                          ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-bold shadow-md"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                      }`}
+                    >
+                      <Layers className="h-3.5 w-3.5" />
+                      <span>XML Sitemap.xml</span>
+                      <Badge className="bg-teal-500/20 text-teal-300 border-none text-[9px] px-1.5 py-0">
+                        Live
+                      </Badge>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSeoSubTab("robots")}
+                      className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+                        seoSubTab === "robots"
+                          ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-bold shadow-md"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                      }`}
+                    >
+                      <Bot className="h-3.5 w-3.5" />
+                      <span>Robots.txt & Crawling</span>
+                      <Badge
+                        className={`text-[9px] px-1.5 py-0 border-none ${
+                          websiteSettings.allowIndexing !== false
+                            ? "bg-emerald-500/20 text-emerald-300"
+                            : "bg-rose-500/20 text-rose-300"
+                        }`}
+                      >
+                        {websiteSettings.allowIndexing !== false ? "Indexable" : "NoIndex"}
+                      </Badge>
+                    </button>
+                  </div>
+
+                  {/* ================= SUB-TAB 1: METADATA & SOCIAL CARDS ================= */}
+                  {seoSubTab === "meta" && (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex rounded-xl border border-slate-800 bg-slate-950 p-1">
+                          <button
+                            type="button"
+                            onClick={() => setSeoScope("doctor")}
+                            className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                              seoScope === "doctor"
+                                ? "bg-teal-500 text-slate-950 shadow-md"
+                                : "text-slate-400 hover:text-slate-200"
+                            }`}
+                          >
+                            Doctor Profile SEO
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSeoScope("website")}
+                            className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                              seoScope === "website"
+                                ? "bg-teal-500 text-slate-950 shadow-md"
+                                : "text-slate-400 hover:text-slate-200"
+                            }`}
+                          >
+                            Website Global SEO
+                          </button>
+                        </div>
+
                         <Badge className="bg-teal-500/10 text-teal-300 border-teal-500/20 text-[10px]">
-                          Real-time Sync
+                          Editing {seoScope === "doctor" ? "Doctor Profile" : "Website Global"} Meta
                         </Badge>
                       </div>
 
-                      <div className="space-y-4 text-xs">
-                        {/* SEO Title */}
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <label className="text-slate-300 font-medium">
-                              SEO Title (Title Tag)
-                            </label>
-                            <span
-                              className={`text-[10px] ${(seoForm.seoTitle || "").length > 60 ? "text-amber-400 font-bold" : "text-slate-500"}`}
-                            >
-                              {(seoForm.seoTitle || "").length}/65 chars
-                            </span>
-                          </div>
-                          <Input
-                            value={seoForm.seoTitle || ""}
-                            onChange={(e) =>
-                              setSeoForm({
-                                ...seoForm,
-                                seoTitle: e.target.value,
-                              })
-                            }
-                            placeholder="e.g. Dr. Md. Rashedul Alam | Medicine Specialist in Dhaka"
-                            className="border-slate-800 bg-slate-950 text-slate-200 rounded-xl"
-                          />
-                        </div>
-
-                        {/* Meta Description */}
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <label className="text-slate-300 font-medium">
-                              Meta Description
-                            </label>
-                            <span
-                              className={`text-[10px] ${(seoForm.metaDescription || "").length > 155 ? "text-amber-400 font-bold" : "text-slate-500"}`}
-                            >
-                              {(seoForm.metaDescription || "").length}/160 chars
-                            </span>
-                          </div>
-                          <textarea
-                            rows={3}
-                            value={seoForm.metaDescription || ""}
-                            onChange={(e) =>
-                              setSeoForm({
-                                ...seoForm,
-                                metaDescription: e.target.value,
-                              })
-                            }
-                            placeholder="e.g. Book appointments with Dr. Md. Rashedul Alam, a consultant medicine specialist in Dhaka..."
-                            className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 focus:outline-none focus:border-teal-500"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-slate-300 font-medium mb-1">
-                              Focus Keyword
-                            </label>
-                            <Input
-                              value={seoForm.focusKeyword || ""}
-                              onChange={(e) =>
-                                setSeoForm({
-                                  ...seoForm,
-                                  focusKeyword: e.target.value,
-                                })
-                              }
-                              placeholder="e.g. medicine specialist Dhaka"
-                              className="border-slate-800 bg-slate-950 text-slate-200 rounded-xl"
-                            />
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left: Interactive SEO Form */}
+                        <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-4">
+                          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 className="font-bold text-white text-base flex items-center gap-2">
+                              <Edit className="h-4 w-4 text-teal-400" />
+                              <span>
+                                {seoScope === "doctor"
+                                  ? "Doctor Profile Metadata"
+                                  : "Website Global Metadata"}
+                              </span>
+                            </h3>
+                            <Badge className="bg-teal-500/10 text-teal-300 border-teal-500/20 text-[10px]">
+                              Real-time Sync
+                            </Badge>
                           </div>
 
-                          <div>
-                            <label className="block text-slate-300 font-medium mb-1">
-                              Canonical URL
-                            </label>
-                            <Input
-                              value={seoForm.canonicalUrl || ""}
-                              onChange={(e) =>
-                                setSeoForm({
-                                  ...seoForm,
-                                  canonicalUrl: e.target.value,
-                                })
-                              }
-                              placeholder="https://dr-rashed.com/..."
-                              className="border-slate-800 bg-slate-950 text-slate-200 rounded-xl"
-                            />
-                          </div>
-                        </div>
+                          <div className="space-y-4 text-xs">
+                            {/* SEO Title */}
+                            <div>
+                              <div className="flex justify-between mb-1">
+                                <label className="text-slate-300 font-medium">
+                                  SEO Title (Title Tag)
+                                </label>
+                                <span
+                                  className={`text-[10px] ${(seoForm.seoTitle || "").length > 60 ? "text-amber-400 font-bold" : "text-slate-500"}`}
+                                >
+                                  {(seoForm.seoTitle || "").length}/65 chars
+                                </span>
+                              </div>
+                              <Input
+                                value={seoForm.seoTitle || ""}
+                                onChange={(e) =>
+                                  setSeoForm({
+                                    ...seoForm,
+                                    seoTitle: e.target.value,
+                                  })
+                                }
+                                placeholder="e.g. Dr. Md. Rashedul Alam | Medicine Specialist in Dhaka"
+                                className="border-slate-800 bg-slate-950 text-slate-200 rounded-xl"
+                              />
+                            </div>
 
-                        {/* Social Share OG Image with File Upload */}
-                        <div className="border-t border-slate-800/80 pt-3">
-                          <FileUploadInput
-                            label="OpenGraph / Social Card Image"
-                            value={seoForm.ogImage || ""}
-                            onChange={(url) =>
-                              setSeoForm({
-                                ...seoForm,
-                                ogImage: url,
-                                twitterImage: url,
-                              })
-                            }
-                            mediaList={mediaList}
-                            placeholder="Upload social share banner or enter URL..."
-                          />
-                        </div>
+                            {/* Meta Description */}
+                            <div>
+                              <div className="flex justify-between mb-1">
+                                <label className="text-slate-300 font-medium">
+                                  Meta Description
+                                </label>
+                                <span
+                                  className={`text-[10px] ${(seoForm.metaDescription || "").length > 155 ? "text-amber-400 font-bold" : "text-slate-500"}`}
+                                >
+                                  {(seoForm.metaDescription || "").length}/160 chars
+                                </span>
+                              </div>
+                              <textarea
+                                rows={3}
+                                value={seoForm.metaDescription || ""}
+                                onChange={(e) =>
+                                  setSeoForm({
+                                    ...seoForm,
+                                    metaDescription: e.target.value,
+                                  })
+                                }
+                                placeholder="e.g. Book appointments with Dr. Md. Rashedul Alam, a consultant medicine specialist in Dhaka..."
+                                className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 focus:outline-none focus:border-teal-500"
+                              />
+                            </div>
 
-                        {/* OpenGraph Title & Description */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-slate-300 font-medium mb-1">
-                              Social Title (OG)
-                            </label>
-                            <Input
-                              value={seoForm.ogTitle || ""}
-                              onChange={(e) =>
-                                setSeoForm({
-                                  ...seoForm,
-                                  ogTitle: e.target.value,
-                                })
-                              }
-                              placeholder="Custom social title..."
-                              className="border-slate-800 bg-slate-950 text-slate-200 rounded-xl"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-slate-300 font-medium mb-1">
-                              Social Description (OG)
-                            </label>
-                            <Input
-                              value={seoForm.ogDescription || ""}
-                              onChange={(e) =>
-                                setSeoForm({
-                                  ...seoForm,
-                                  ogDescription: e.target.value,
-                                })
-                              }
-                              placeholder="Custom social excerpt..."
-                              className="border-slate-800 bg-slate-950 text-slate-200 rounded-xl"
-                            />
-                          </div>
-                        </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-slate-300 font-medium mb-1">
+                                  Focus Keyword
+                                </label>
+                                <Input
+                                  value={seoForm.focusKeyword || ""}
+                                  onChange={(e) =>
+                                    setSeoForm({
+                                      ...seoForm,
+                                      focusKeyword: e.target.value,
+                                    })
+                                  }
+                                  placeholder="e.g. medicine specialist Dhaka"
+                                  className="border-slate-800 bg-slate-950 text-slate-200 rounded-xl"
+                                />
+                              </div>
 
-                        {/* Robots Indexing Toggle */}
-                        <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 p-3">
-                          <div>
-                            <p className="font-semibold text-white">
-                              Search Engine Indexing
-                            </p>
-                            <p className="text-[10px] text-slate-400">
-                              Allow Google and Bing to index this page
-                            </p>
+                              <div>
+                                <label className="block text-slate-300 font-medium mb-1">
+                                  Canonical URL
+                                </label>
+                                <Input
+                                  value={seoForm.canonicalUrl || ""}
+                                  onChange={(e) =>
+                                    setSeoForm({
+                                      ...seoForm,
+                                      canonicalUrl: e.target.value,
+                                    })
+                                  }
+                                  placeholder="https://drrashed.bd/..."
+                                  className="border-slate-800 bg-slate-950 text-slate-200 rounded-xl"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Social Share OG Image with File Upload */}
+                            <div className="border-t border-slate-800/80 pt-3">
+                              <FileUploadInput
+                                label="OpenGraph / Social Card Image"
+                                value={seoForm.ogImage || ""}
+                                onChange={(url) =>
+                                  setSeoForm({
+                                    ...seoForm,
+                                    ogImage: url,
+                                    twitterImage: url,
+                                  })
+                                }
+                                mediaList={mediaList}
+                                placeholder="Upload social share banner or enter URL..."
+                              />
+                            </div>
+
+                            {/* OpenGraph Title & Description */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-slate-300 font-medium mb-1">
+                                  Social Title (OG)
+                                </label>
+                                <Input
+                                  value={seoForm.ogTitle || ""}
+                                  onChange={(e) =>
+                                    setSeoForm({
+                                      ...seoForm,
+                                      ogTitle: e.target.value,
+                                    })
+                                  }
+                                  placeholder="Custom social title..."
+                                  className="border-slate-800 bg-slate-950 text-slate-200 rounded-xl"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-slate-300 font-medium mb-1">
+                                  Social Description (OG)
+                                </label>
+                                <Input
+                                  value={seoForm.ogDescription || ""}
+                                  onChange={(e) =>
+                                    setSeoForm({
+                                      ...seoForm,
+                                      ogDescription: e.target.value,
+                                    })
+                                  }
+                                  placeholder="Custom social excerpt..."
+                                  className="border-slate-800 bg-slate-950 text-slate-200 rounded-xl"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Robots Indexing Toggle */}
+                            <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 p-3">
+                              <div>
+                                <p className="font-semibold text-white">
+                                  Search Engine Indexing
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                  Allow Google, Bing and other crawlers to index this page
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSeoForm({
+                                    ...seoForm,
+                                    noIndex: !seoForm.noIndex,
+                                  })
+                                }
+                                className={`flex h-6 w-11 items-center rounded-full transition-colors ${
+                                  !seoForm.noIndex ? "bg-teal-500" : "bg-slate-800"
+                                }`}
+                              >
+                                <span
+                                  className={`h-4 w-4 rounded-full bg-white transition-transform ${
+                                    !seoForm.noIndex
+                                      ? "translate-x-6"
+                                      : "translate-x-1"
+                                  }`}
+                                />
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSeoForm({
-                                ...seoForm,
-                                noIndex: !seoForm.noIndex,
-                              })
-                            }
-                            className={`flex h-6 w-11 items-center rounded-full transition-colors ${
-                              !seoForm.noIndex ? "bg-teal-500" : "bg-slate-800"
-                            }`}
-                          >
-                            <span
-                              className={`h-4 w-4 rounded-full bg-white transition-transform ${
-                                !seoForm.noIndex
-                                  ? "translate-x-6"
-                                  : "translate-x-1"
-                              }`}
-                            />
-                          </button>
+                        </Card>
+
+                        {/* Right: Live SERP & Social Previews */}
+                        <div className="space-y-6">
+                          {/* Google SERP Preview */}
+                          <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-3">
+                            <h3 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
+                              <Globe className="h-4 w-4 text-cyan-400" />
+                              <span>Google Search SERP Preview (Live)</span>
+                            </h3>
+
+                            <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-1.5 font-sans">
+                              <div className="flex items-center gap-2 text-xs text-slate-400">
+                                <span className="text-slate-300 font-semibold">
+                                  {websiteSettings.siteUrl ? websiteSettings.siteUrl.replace(/^https?:\/\//, "") : "drrashed.bd"}
+                                </span>
+                                <span>› appointment › specialist</span>
+                              </div>
+                              <h4 className="text-base text-[#8ab4f8] font-medium hover:underline cursor-pointer">
+                                {seoForm.seoTitle ||
+                                  (seoScope === "doctor"
+                                    ? doctorProfile?.name
+                                    : websiteSettings?.siteName) ||
+                                  "Dr. Md. Rashedul Alam | Medicine Specialist"}
+                              </h4>
+                              <p className="text-xs text-[#bdc1c6] leading-relaxed line-clamp-2">
+                                {seoForm.metaDescription ||
+                                  (seoScope === "doctor"
+                                    ? doctorProfile?.biography
+                                    : websiteSettings?.footerDescription) ||
+                                  "Book appointments with Dr. Md. Rashedul Alam, senior consultant medicine specialist in Dhaka."}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+                              <span>
+                                SEO Optimization:{" "}
+                                <strong className="text-emerald-400">High</strong>
+                              </span>
+                              <span>
+                                Indexed:{" "}
+                                <strong
+                                  className={
+                                    !seoForm.noIndex
+                                      ? "text-teal-400"
+                                      : "text-rose-400"
+                                  }
+                                >
+                                  {!seoForm.noIndex
+                                    ? "Yes (Index)"
+                                    : "No (NoIndex)"}
+                                </strong>
+                              </span>
+                            </div>
+                          </Card>
+
+                          {/* Social Share Card Preview */}
+                          <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-3">
+                            <h3 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
+                              <Share2 className="h-4 w-4 text-teal-400" />
+                              <span>
+                                OpenGraph / Social Media Card Preview (Live)
+                              </span>
+                            </h3>
+
+                            <div className="rounded-xl border border-slate-800 bg-slate-950 overflow-hidden">
+                              <div className="aspect-video w-full bg-slate-900 relative">
+                                <img
+                                  src={
+                                    seoForm.ogImage ||
+                                    doctorProfile?.image ||
+                                    "/placeholder.svg"
+                                  }
+                                  alt="Social preview"
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                              <div className="p-3.5 space-y-1 bg-slate-900/95 border-t border-slate-800">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">
+                                  {websiteSettings.siteName || "DRRASHED.BD"}
+                                </p>
+                                <h4 className="text-sm font-bold text-white truncate">
+                                  {seoForm.ogTitle ||
+                                    seoForm.seoTitle ||
+                                    doctorProfile?.name ||
+                                    "Dr. Md. Rashedul Alam"}
+                                </h4>
+                                <p className="text-xs text-slate-400 line-clamp-1">
+                                  {seoForm.ogDescription ||
+                                    seoForm.metaDescription ||
+                                    doctorProfile?.title ||
+                                    "Consultant Medicine Specialist"}
+                                </p>
+                              </div>
+                            </div>
+                          </Card>
                         </div>
                       </div>
-                    </Card>
+                    </div>
+                  )}
 
-                    {/* Right: Live SERP & Social Previews */}
-                    <div className="space-y-6">
-                      {/* Google SERP Preview */}
-                      <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-3">
-                        <h3 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
-                          <Globe className="h-4 w-4 text-cyan-400" />
-                          <span>Google Search SERP Preview (Live)</span>
-                        </h3>
+                  {/* ================= SUB-TAB 2: GOOGLE SEARCH CONSOLE & WEBMASTERS ================= */}
+                  {seoSubTab === "gsc" && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      {/* Left: Google Search Console Setup Card */}
+                      <div className="lg:col-span-7 space-y-6">
+                        <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-5">
+                          <div className="border-b border-slate-800 pb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                <SearchCheck className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-white text-base">
+                                  Google Search Console Verification
+                                </h3>
+                                <p className="text-xs text-slate-400">
+                                  Verify domain ownership to track impressions, clicks, keywords & indexing
+                                </p>
+                              </div>
+                            </div>
 
-                        <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-1.5 font-sans">
-                          <div className="flex items-center gap-2 text-xs text-slate-400">
-                            <span className="text-slate-300 font-semibold">
-                              dr-rashed.com
-                            </span>
-                            <span>› appointment › internal-medicine</span>
-                          </div>
-                          <h4 className="text-base text-[#8ab4f8] font-medium hover:underline cursor-pointer">
-                            {seoForm.seoTitle ||
-                              (seoScope === "doctor"
-                                ? doctorProfile?.name
-                                : websiteSettings?.siteName) ||
-                              "Dr. Md. Rashedul Alam | Medicine Specialist"}
-                          </h4>
-                          <p className="text-xs text-[#bdc1c6] leading-relaxed line-clamp-2">
-                            {seoForm.metaDescription ||
-                              (seoScope === "doctor"
-                                ? doctorProfile?.biography
-                                : websiteSettings?.footerDescription) ||
-                              "Book appointments with Dr. Md. Rashedul Alam, senior consultant medicine specialist in Dhaka."}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-                          <span>
-                            SEO Optimization:{" "}
-                            <strong className="text-emerald-400">High</strong>
-                          </span>
-                          <span>
-                            Indexed:{" "}
-                            <strong
+                            <Badge
                               className={
-                                !seoForm.noIndex
-                                  ? "text-teal-400"
-                                  : "text-rose-400"
+                                websiteSettings.googleSearchConsoleVerification
+                                  ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-xs"
+                                  : "bg-amber-500/15 text-amber-300 border-amber-500/30 text-xs"
                               }
                             >
-                              {!seoForm.noIndex
-                                ? "Yes (Index)"
-                                : "No (NoIndex)"}
-                            </strong>
-                          </span>
-                        </div>
-                      </Card>
-
-                      {/* Social Share Card Preview */}
-                      <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-3">
-                        <h3 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
-                          <Share2 className="h-4 w-4 text-teal-400" />
-                          <span>
-                            OpenGraph / Social Media Card Preview (Live)
-                          </span>
-                        </h3>
-
-                        <div className="rounded-xl border border-slate-800 bg-slate-950 overflow-hidden">
-                          <div className="aspect-video w-full bg-slate-900 relative">
-                            <img
-                              src={
-                                seoForm.ogImage ||
-                                doctorProfile?.image ||
-                                "/placeholder.svg"
-                              }
-                              alt="Social preview"
-                              className="h-full w-full object-cover"
-                            />
+                              {websiteSettings.googleSearchConsoleVerification
+                                ? "Verification Tag Active"
+                                : "Not Configured"}
+                            </Badge>
                           </div>
-                          <div className="p-3.5 space-y-1 bg-slate-900/95 border-t border-slate-800">
-                            <p className="text-[10px] uppercase font-bold text-slate-400">
-                              DR-RASHED.COM
+
+                          <div className="space-y-4 text-xs">
+                            <div>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <label className="text-slate-300 font-medium flex items-center gap-1.5">
+                                  <span>Google Verification Meta Code / Tag</span>
+                                </label>
+                                {websiteSettings.googleSearchConsoleVerification && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const tag = `<meta name="google-site-verification" content="${websiteSettings.googleSearchConsoleVerification}" />`;
+                                      navigator.clipboard.writeText(tag);
+                                      setCopiedKey("gsc");
+                                      setTimeout(() => setCopiedKey(null), 2000);
+                                    }}
+                                    className="text-[11px] text-teal-400 hover:text-teal-300 flex items-center gap-1"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                    <span>{copiedKey === "gsc" ? "Copied Tag!" : "Copy HTML Tag"}</span>
+                                  </button>
+                                )}
+                              </div>
+                              <Input
+                                value={websiteSettings.googleSearchConsoleVerification || ""}
+                                onChange={(e) => {
+                                  // Clean input if full tag pasted
+                                  let val = e.target.value.trim();
+                                  const contentMatch = val.match(/content=["']([^"']+)["']/);
+                                  if (contentMatch) {
+                                    val = contentMatch[1];
+                                  }
+                                  setWebsiteSettings({
+                                    ...websiteSettings,
+                                    googleSearchConsoleVerification: val,
+                                  });
+                                }}
+                                placeholder="e.g. dB8uK19X... or paste entire <meta name='google-site-verification' content='...' />"
+                                className="border-slate-800 bg-slate-950 text-slate-200 font-mono text-xs"
+                              />
+                              <p className="text-[11px] text-slate-500 mt-1.5">
+                                Enter your Google HTML verification content code. Next.js will automatically inject the verification tag into the HTML <code className="text-teal-400">&lt;head&gt;</code>.
+                              </p>
+                            </div>
+
+                            {/* Live Verification Snippet Preview */}
+                            <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 space-y-1.5 font-mono text-[11px]">
+                              <p className="text-slate-500 font-sans font-semibold text-[10px] uppercase">
+                                Generated HTML Output:
+                              </p>
+                              <div className="text-slate-300 overflow-x-auto whitespace-pre">
+                                {websiteSettings.googleSearchConsoleVerification ? (
+                                  <span className="text-emerald-400">{`<meta name="google-site-verification" content="${websiteSettings.googleSearchConsoleVerification}" />`}</span>
+                                ) : (
+                                  <span className="text-slate-600">&lt;!-- Google site verification tag will appear here --&gt;</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="pt-2 flex flex-wrap gap-3">
+                              <a
+                                href="https://search.google.com/search-console"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 text-xs font-semibold transition-colors"
+                              >
+                                <span>Open Google Search Console</span>
+                                <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                              </a>
+
+                              <a
+                                href="https://search.google.com/search-console/inspect"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 px-3.5 py-2 text-xs font-medium transition-colors"
+                              >
+                                <span>URL Inspection Tool</span>
+                                <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                              </a>
+                            </div>
+                          </div>
+                        </Card>
+
+                        {/* Other Webmaster Tools */}
+                        <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-4">
+                          <div className="border-b border-slate-800 pb-3 flex items-center gap-2">
+                            <ShieldCheck className="h-4 w-4 text-purple-400" />
+                            <h3 className="font-bold text-white text-sm">
+                              Other Search Engine & Domain Verification
+                            </h3>
+                          </div>
+
+                          <div className="space-y-4 text-xs">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-slate-300 font-medium mb-1">
+                                  Bing Webmaster Tools (msvalidate.01)
+                                </label>
+                                <Input
+                                  value={websiteSettings.bingVerification || ""}
+                                  onChange={(e) =>
+                                    setWebsiteSettings({
+                                      ...websiteSettings,
+                                      bingVerification: e.target.value.trim(),
+                                    })
+                                  }
+                                  placeholder="e.g. 7E2B4B8A91C2..."
+                                  className="border-slate-800 bg-slate-950 text-slate-200 font-mono text-xs"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-slate-300 font-medium mb-1">
+                                  Facebook Domain Verification
+                                </label>
+                                <Input
+                                  value={websiteSettings.facebookDomainVerification || ""}
+                                  onChange={(e) =>
+                                    setWebsiteSettings({
+                                      ...websiteSettings,
+                                      facebookDomainVerification: e.target.value.trim(),
+                                    })
+                                  }
+                                  placeholder="e.g. abcdef123456..."
+                                  className="border-slate-800 bg-slate-950 text-slate-200 font-mono text-xs"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-slate-300 font-medium mb-1">
+                                Yandex Webmaster Verification
+                              </label>
+                              <Input
+                                value={websiteSettings.yandexVerification || ""}
+                                onChange={(e) =>
+                                  setWebsiteSettings({
+                                    ...websiteSettings,
+                                    yandexVerification: e.target.value.trim(),
+                                  })
+                                }
+                                placeholder="e.g. yandex-verification code"
+                                className="border-slate-800 bg-slate-950 text-slate-200 font-mono text-xs"
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+
+                      {/* Right: How to Verify Guide & Checklist */}
+                      <div className="lg:col-span-5 space-y-6">
+                        <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-4">
+                          <h4 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
+                            <Info className="h-4 w-4 text-teal-400" />
+                            <span>Step-by-Step Google Verification</span>
+                          </h4>
+
+                          <ol className="space-y-3 text-xs text-slate-300 list-decimal list-inside leading-relaxed">
+                            <li className="pl-1">
+                              Visit <strong className="text-white">Google Search Console</strong> and click <strong className="text-teal-400">+ Add Property</strong>.
+                            </li>
+                            <li className="pl-1">
+                              Enter your domain URL (e.g. <code className="text-teal-300 font-mono bg-slate-950 px-1 py-0.5 rounded">{websiteSettings.siteUrl || "https://drrashed.bd"}</code>).
+                            </li>
+                            <li className="pl-1">
+                              Under <em>Other verification methods</em>, choose <strong className="text-white">HTML Tag</strong>.
+                            </li>
+                            <li className="pl-1">
+                              Copy the string inside <code className="text-amber-300 font-mono bg-slate-950 px-1 py-0.5 rounded">content="..."</code> and paste it in the field on the left.
+                            </li>
+                            <li className="pl-1">
+                              Click <strong className="text-emerald-400">Save SEO Settings</strong> above.
+                            </li>
+                            <li className="pl-1">
+                              Return to Google Search Console and click <strong className="text-white">Verify</strong>!
+                            </li>
+                          </ol>
+
+                          <div className="rounded-xl border border-teal-500/20 bg-teal-500/5 p-3 text-xs text-teal-300/90 space-y-1">
+                            <p className="font-semibold text-teal-200 flex items-center gap-1.5">
+                              <CheckCircle2 className="h-4 w-4 text-teal-400" />
+                              <span>Instant Verification Live</span>
                             </p>
-                            <h4 className="text-sm font-bold text-white truncate">
-                              {seoForm.ogTitle ||
-                                seoForm.seoTitle ||
-                                doctorProfile?.name ||
-                                "Dr. Md. Rashedul Alam"}
-                            </h4>
-                            <p className="text-xs text-slate-400 line-clamp-1">
-                              {seoForm.ogDescription ||
-                                seoForm.metaDescription ||
-                                doctorProfile?.title ||
-                                "Consultant Medicine Specialist"}
+                            <p className="text-[11px] text-slate-400">
+                              Once saved, our server-side metadata generator immediately outputs the verification header for Google bots without needing code redeployment.
                             </p>
                           </div>
-                        </div>
-                      </Card>
+                        </Card>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* ================= SUB-TAB 3: GOOGLE ANALYTICS & GTM ================= */}
+                  {seoSubTab === "analytics" && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      {/* Left: Google Analytics 4 & GTM */}
+                      <div className="lg:col-span-7 space-y-6">
+                        <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-5">
+                          <div className="border-b border-slate-800 pb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <BarChart3 className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-white text-base">
+                                  Google Analytics 4 (GA4) Integration
+                                </h3>
+                                <p className="text-xs text-slate-400">
+                                  Real-time traffic analytics, patient visits, conversions & booking tracking
+                                </p>
+                              </div>
+                            </div>
+
+                            <Badge
+                              className={
+                                websiteSettings.googleAnalyticsId && websiteSettings.googleAnalyticsId.startsWith("G-")
+                                  ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-xs"
+                                  : "bg-slate-800 text-slate-400 text-xs"
+                              }
+                            >
+                              {websiteSettings.googleAnalyticsId && websiteSettings.googleAnalyticsId.startsWith("G-") ? (
+                                <span className="flex items-center gap-1.5">
+                                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                                  <span>GA4 Active</span>
+                                </span>
+                              ) : (
+                                "Disabled"
+                              )}
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-4 text-xs">
+                            <div>
+                              <label className="block text-slate-300 font-medium mb-1.5">
+                                GA4 Measurement ID (Stream ID)
+                              </label>
+                              <Input
+                                value={websiteSettings.googleAnalyticsId || ""}
+                                onChange={(e) =>
+                                  setWebsiteSettings({
+                                    ...websiteSettings,
+                                    googleAnalyticsId: e.target.value.trim().toUpperCase(),
+                                  })
+                                }
+                                placeholder="G-XXXXXXXXXX"
+                                className="border-slate-800 bg-slate-950 text-slate-200 font-mono text-xs tracking-wider"
+                              />
+                              <p className="text-[11px] text-slate-500 mt-1.5">
+                                Found in Google Analytics &gt; Admin &gt; Data Streams &gt; Measurement ID (starts with <code className="text-teal-400">G-</code>).
+                              </p>
+                            </div>
+
+                            <div className="border-t border-slate-800/80 pt-4 space-y-4">
+                              <div className="flex items-center gap-2 text-white font-semibold">
+                                <Layers className="h-4 w-4 text-blue-400" />
+                                <span>Google Tag Manager (Optional)</span>
+                              </div>
+
+                              <div>
+                                <label className="block text-slate-300 font-medium mb-1.5">
+                                  GTM Container ID
+                                </label>
+                                <Input
+                                  value={websiteSettings.googleTagManagerId || ""}
+                                  onChange={(e) =>
+                                    setWebsiteSettings({
+                                      ...websiteSettings,
+                                      googleTagManagerId: e.target.value.trim().toUpperCase(),
+                                    })
+                                  }
+                                  placeholder="GTM-XXXXXXX"
+                                  className="border-slate-800 bg-slate-950 text-slate-200 font-mono text-xs tracking-wider"
+                                />
+                                <p className="text-[11px] text-slate-500 mt-1.5">
+                                  Loads custom tracking tags, Facebook Pixels, or conversion events through Google Tag Manager.
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="pt-2 flex flex-wrap gap-3">
+                              <a
+                                href="https://analytics.google.com"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 text-xs font-semibold transition-colors"
+                              >
+                                <span>Open Google Analytics</span>
+                                <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                              </a>
+                              <a
+                                href="https://tagmanager.google.com"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 px-3.5 py-2 text-xs font-medium transition-colors"
+                              >
+                                <span>Open Tag Manager</span>
+                                <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                              </a>
+                            </div>
+                          </div>
+                        </Card>
+
+                        {/* Custom Head Tracking Script */}
+                        <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-4">
+                          <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Code className="h-4 w-4 text-cyan-400" />
+                              <h3 className="font-bold text-white text-sm">
+                                Custom Head Script Snippet (Advanced)
+                              </h3>
+                            </div>
+                            <Badge className="bg-slate-800 text-slate-400 text-[10px]">
+                              Header Injector
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-2 text-xs">
+                            <label className="block text-slate-300 font-medium">
+                              Custom Tracking Code / Pixel Scripts
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={websiteSettings.customHeadScript || ""}
+                              onChange={(e) =>
+                                setWebsiteSettings({
+                                  ...websiteSettings,
+                                  customHeadScript: e.target.value,
+                                })
+                              }
+                              placeholder="<!-- Paste custom Microsoft Clarity, Meta Pixel or Hotjar scripts here -->"
+                              className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-teal-500"
+                            />
+                            <p className="text-[11px] text-slate-500">
+                              Injected securely inside the document <code className="text-teal-400">&lt;head&gt;</code> tag on every page.
+                            </p>
+                          </div>
+                        </Card>
+                      </div>
+
+                      {/* Right: GA4 Performance Architecture Guide */}
+                      <div className="lg:col-span-5 space-y-6">
+                        <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-4">
+                          <h4 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
+                            <Activity className="h-4 w-4 text-emerald-400" />
+                            <span>High-Performance Analytics Architecture</span>
+                          </h4>
+
+                          <div className="space-y-3 text-xs text-slate-300">
+                            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                              <p className="font-semibold text-white">⚡ Zero Blocking Next.js Scripts</p>
+                              <p className="text-slate-400 text-[11px]">
+                                Analytics scripts load with <code className="text-teal-300">afterInteractive</code> strategy, preserving 100/100 Core Web Vitals and lightning-fast page loading speeds.
+                              </p>
+                            </div>
+
+                            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                              <p className="font-semibold text-white">📈 Automatic Page Views</p>
+                              <p className="text-slate-400 text-[11px]">
+                                SPA navigation events are recorded with real-time pathname sync for patient appointments and schedule booking flows.
+                              </p>
+                            </div>
+
+                            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                              <p className="font-semibold text-white">🔒 Privacy & Compliance</p>
+                              <p className="text-slate-400 text-[11px]">
+                                Tracking runs client-side without storing patient medical records or PHI in analytics payloads.
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ================= SUB-TAB 4: XML SITEMAP MANAGER ================= */}
+                  {seoSubTab === "sitemap" && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      {/* Left: Sitemap Controller & Quick Copy */}
+                      <div className="lg:col-span-7 space-y-6">
+                        <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-5">
+                          <div className="border-b border-slate-800 pb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <div className="p-2 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                                <Layers className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-white text-base">
+                                  Dynamic XML Sitemap (sitemap.xml)
+                                </h3>
+                                <p className="text-xs text-slate-400">
+                                  Auto-generated sitemap including home, appointments, doctor chamber schedules & articles
+                                </p>
+                              </div>
+                            </div>
+
+                            <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-xs">
+                              Auto-Synced
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-4 text-xs">
+                            {/* Sitemap Enable Switch */}
+                            <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 p-3.5">
+                              <div>
+                                <p className="font-semibold text-white">
+                                  Enable XML Sitemap Generation
+                                </p>
+                                <p className="text-[11px] text-slate-400">
+                                  Serves dynamic <code className="text-teal-400 font-mono">/sitemap.xml</code> for search engines
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setWebsiteSettings({
+                                    ...websiteSettings,
+                                    sitemapEnabled: websiteSettings.sitemapEnabled === false ? true : false,
+                                  })
+                                }
+                                className={`flex h-6 w-11 items-center rounded-full transition-colors ${
+                                  websiteSettings.sitemapEnabled !== false ? "bg-teal-500" : "bg-slate-800"
+                                }`}
+                              >
+                                <span
+                                  className={`h-4 w-4 rounded-full bg-white transition-transform ${
+                                    websiteSettings.sitemapEnabled !== false
+                                      ? "translate-x-6"
+                                      : "translate-x-1"
+                                  }`}
+                                />
+                              </button>
+                            </div>
+
+                            {/* Sitemap URL Field */}
+                            <div>
+                              <label className="block text-slate-300 font-medium mb-1.5">
+                                Live Sitemap URL (For Google Search Console)
+                              </label>
+                              <div className="flex gap-2">
+                                <Input
+                                  readOnly
+                                  value={`${(websiteSettings.siteUrl || "https://drrashed.bd").replace(/\/+$/, "")}/sitemap.xml`}
+                                  className="border-slate-800 bg-slate-950 text-teal-300 font-mono text-xs cursor-pointer select-all"
+                                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                                />
+                                <Button
+                                  type="button"
+                                  onClick={() => {
+                                    const sitemapUrl = `${(websiteSettings.siteUrl || "https://drrashed.bd").replace(/\/+$/, "")}/sitemap.xml`;
+                                    navigator.clipboard.writeText(sitemapUrl);
+                                    setCopiedKey("sitemap");
+                                    setTimeout(() => setCopiedKey(null), 2000);
+                                  }}
+                                  className="bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs gap-1 px-3.5 shrink-0"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                  <span>{copiedKey === "sitemap" ? "Copied!" : "Copy"}</span>
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="pt-2 flex flex-wrap gap-3">
+                              <a
+                                href="/sitemap.xml"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 px-3.5 py-2 text-xs font-semibold transition-colors"
+                              >
+                                <span>Inspect Live /sitemap.xml</span>
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+
+                              <a
+                                href="https://search.google.com/search-console/sitemaps"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 text-xs font-medium transition-colors"
+                              >
+                                <span>Submit Sitemap to Google</span>
+                                <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                              </a>
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+
+                      {/* Right: Dynamic Included Routes Breakdown */}
+                      <div className="lg:col-span-5 space-y-6">
+                        <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-4">
+                          <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+                            <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-cyan-400" />
+                              <span>Dynamic Sitemap Structure</span>
+                            </h4>
+                            <Badge className="bg-slate-800 text-slate-300 text-[10px]">
+                              Priority & Frequency
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-2.5 text-xs">
+                            {/* Route 1: Home */}
+                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                              <div>
+                                <p className="font-mono font-semibold text-white text-xs">/</p>
+                                <p className="text-[10px] text-slate-400">Doctor Portfolio Homepage</p>
+                              </div>
+                              <div className="text-right">
+                                <Badge className="bg-emerald-500/15 text-emerald-300 border-none text-[9px]">
+                                  Priority 1.0
+                                </Badge>
+                                <p className="text-[9px] text-slate-500 mt-0.5">Daily</p>
+                              </div>
+                            </div>
+
+                            {/* Route 2: Appointments */}
+                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                              <div>
+                                <p className="font-mono font-semibold text-white text-xs">/appointments</p>
+                                <p className="text-[10px] text-slate-400">Hospital Chambers & Booking</p>
+                              </div>
+                              <div className="text-right">
+                                <Badge className="bg-teal-500/15 text-teal-300 border-none text-[9px]">
+                                  Priority 0.9
+                                </Badge>
+                                <p className="text-[9px] text-slate-500 mt-0.5">Daily</p>
+                              </div>
+                            </div>
+
+                            {/* Route 3: Schedules */}
+                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                              <div>
+                                <p className="font-mono font-semibold text-white text-xs">/schedules/[slug]</p>
+                                <p className="text-[10px] text-slate-400">All Active Consultation Schedules ({schedules.length})</p>
+                              </div>
+                              <div className="text-right">
+                                <Badge className="bg-blue-500/15 text-blue-300 border-none text-[9px]">
+                                  Priority 0.8
+                                </Badge>
+                                <p className="text-[9px] text-slate-500 mt-0.5">Weekly</p>
+                              </div>
+                            </div>
+
+                            {/* Route 4: Health Articles */}
+                            {blogPosts.length > 0 && (
+                              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                                <div>
+                                  <p className="font-mono font-semibold text-white text-xs">/blog/[slug]</p>
+                                  <p className="text-[10px] text-slate-400">Published Health Articles ({blogPosts.length})</p>
+                                </div>
+                                <div className="text-right">
+                                  <Badge className="bg-purple-500/15 text-purple-300 border-none text-[9px]">
+                                    Priority 0.7
+                                  </Badge>
+                                  <p className="text-[9px] text-slate-500 mt-0.5">Weekly</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </Card>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ================= SUB-TAB 5: ROBOTS.TXT & INDEXING ================= */}
+                  {seoSubTab === "robots" && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      {/* Left: Crawling Controls & Disallowed Paths */}
+                      <div className="lg:col-span-7 space-y-6">
+                        <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-5">
+                          <div className="border-b border-slate-800 pb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                <Bot className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-white text-base">
+                                  Robots.txt & Search Engine Directives
+                                </h3>
+                                <p className="text-xs text-slate-400">
+                                  Control Googlebot, Bingbot, and web crawlers access to paths and directories
+                                </p>
+                              </div>
+                            </div>
+
+                            <Badge
+                              className={
+                                websiteSettings.allowIndexing !== false
+                                  ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-xs"
+                                  : "bg-rose-500/15 text-rose-300 border-rose-500/30 text-xs"
+                              }
+                            >
+                              {websiteSettings.allowIndexing !== false ? "Allow Index" : "Disallow All"}
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-4 text-xs">
+                            {/* Master Crawling Policy */}
+                            <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 p-3.5">
+                              <div>
+                                <p className="font-semibold text-white">
+                                  Allow Search Engines to Index Website
+                                </p>
+                                <p className="text-[11px] text-slate-400">
+                                  When disabled, crawlers will receive <code className="text-rose-400 font-mono">Disallow: /</code> and meta robots <code className="text-rose-400 font-mono">noindex</code>
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setWebsiteSettings({
+                                    ...websiteSettings,
+                                    allowIndexing: websiteSettings.allowIndexing === false ? true : false,
+                                  })
+                                }
+                                className={`flex h-6 w-11 items-center rounded-full transition-colors ${
+                                  websiteSettings.allowIndexing !== false ? "bg-teal-500" : "bg-slate-800"
+                                }`}
+                              >
+                                <span
+                                  className={`h-4 w-4 rounded-full bg-white transition-transform ${
+                                    websiteSettings.allowIndexing !== false
+                                      ? "translate-x-6"
+                                      : "translate-x-1"
+                                  }`}
+                                />
+                              </button>
+                            </div>
+
+                            {/* Disallowed Paths Tag Manager */}
+                            <div className="space-y-2.5">
+                              <label className="block text-slate-300 font-medium">
+                                Blocked / Disallowed Paths (Hidden from Search Engines)
+                              </label>
+
+                              <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-slate-800 bg-slate-950 min-h-[48px] items-center">
+                                {(websiteSettings.disallowedPaths || ["/admin", "/api"]).map(
+                                  (path: string, idx: number) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1 text-xs font-mono text-slate-200"
+                                    >
+                                      <span>Disallow: {path}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const current = websiteSettings.disallowedPaths || ["/admin", "/api"];
+                                          const updated = current.filter((_: any, i: number) => i !== idx);
+                                          setWebsiteSettings({
+                                            ...websiteSettings,
+                                            disallowedPaths: updated,
+                                          });
+                                        }}
+                                        className="text-slate-400 hover:text-rose-400 transition-colors"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </span>
+                                  )
+                                )}
+                              </div>
+
+                              <div className="flex gap-2">
+                                <Input
+                                  value={newDisallowPath}
+                                  onChange={(e) => setNewDisallowPath(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && newDisallowPath.trim()) {
+                                      e.preventDefault();
+                                      const path = newDisallowPath.trim().startsWith("/")
+                                        ? newDisallowPath.trim()
+                                        : `/${newDisallowPath.trim()}`;
+                                      const current = websiteSettings.disallowedPaths || ["/admin", "/api"];
+                                      if (!current.includes(path)) {
+                                        setWebsiteSettings({
+                                          ...websiteSettings,
+                                          disallowedPaths: [...current, path],
+                                        });
+                                      }
+                                      setNewDisallowPath("");
+                                    }
+                                  }}
+                                  placeholder="e.g. /patient or /private-folder"
+                                  className="border-slate-800 bg-slate-950 text-slate-200 font-mono text-xs"
+                                />
+                                <Button
+                                  type="button"
+                                  onClick={() => {
+                                    if (newDisallowPath.trim()) {
+                                      const path = newDisallowPath.trim().startsWith("/")
+                                        ? newDisallowPath.trim()
+                                        : `/${newDisallowPath.trim()}`;
+                                      const current = websiteSettings.disallowedPaths || ["/admin", "/api"];
+                                      if (!current.includes(path)) {
+                                        setWebsiteSettings({
+                                          ...websiteSettings,
+                                          disallowedPaths: [...current, path],
+                                        });
+                                      }
+                                      setNewDisallowPath("");
+                                    }
+                                  }}
+                                  className="bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs px-4 shrink-0 font-semibold"
+                                >
+                                  <Plus className="h-3.5 w-3.5 mr-1" />
+                                  <span>Add Path</span>
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="pt-2 flex flex-wrap gap-3">
+                              <a
+                                href="/robots.txt"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3.5 py-2 text-xs font-semibold transition-colors"
+                              >
+                                <span>Inspect Live /robots.txt</span>
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+
+                      {/* Right: Live Generated robots.txt Preview */}
+                      <div className="lg:col-span-5 space-y-6">
+                        <Card className="border-slate-800 bg-slate-900/80 p-6 rounded-2xl space-y-4">
+                          <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+                            <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                              <FileCode className="h-4 w-4 text-emerald-400" />
+                              <span>Live Generated robots.txt Preview</span>
+                            </h4>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const siteUrl = (websiteSettings.siteUrl || "https://drrashed.bd").replace(/\/+$/, "");
+                                const isAllowed = websiteSettings.allowIndexing !== false;
+                                const disallowed = websiteSettings.disallowedPaths || ["/admin", "/api"];
+                                const text = isAllowed
+                                  ? `User-agent: *\nAllow: /\n${disallowed.map((p: string) => `Disallow: ${p}`).join("\n")}\n\nSitemap: ${siteUrl}/sitemap.xml`
+                                  : `User-agent: *\nDisallow: /\n\nSitemap: ${siteUrl}/sitemap.xml`;
+                                navigator.clipboard.writeText(text);
+                                setCopiedKey("robots");
+                                setTimeout(() => setCopiedKey(null), 2000);
+                              }}
+                              className="text-[11px] text-teal-400 hover:text-teal-300 flex items-center gap-1"
+                            >
+                              <Copy className="h-3 w-3" />
+                              <span>{copiedKey === "robots" ? "Copied!" : "Copy"}</span>
+                            </button>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-xs text-slate-300 space-y-1 overflow-x-auto">
+                            <p className="text-slate-500"># Generated dynamically by Next.js SEO engine</p>
+                            <p className="text-purple-400 font-bold">User-agent: *</p>
+                            {websiteSettings.allowIndexing !== false ? (
+                              <>
+                                <p className="text-emerald-400">Allow: /</p>
+                                {(websiteSettings.disallowedPaths || ["/admin", "/api"]).map(
+                                  (p: string, i: number) => (
+                                    <p key={i} className="text-amber-400">
+                                      Disallow: {p}
+                                    </p>
+                                  )
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-rose-400 font-bold">Disallow: /</p>
+                            )}
+                            {websiteSettings.sitemapEnabled !== false && (
+                              <p className="text-cyan-400 pt-2">
+                                Sitemap: {(websiteSettings.siteUrl || "https://drrashed.bd").replace(/\/+$/, "")}/sitemap.xml
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="text-[11px] text-slate-400 leading-relaxed">
+                            Crawlers such as Googlebot, Bingbot, and DuckDuckBot read these directives before indexing. Sensitive administrative and API paths are automatically shielded.
+                          </div>
+                        </Card>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

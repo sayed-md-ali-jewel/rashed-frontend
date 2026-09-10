@@ -259,6 +259,7 @@ export const gallery: GalleryItem[] = [
 
 export const websiteSetting: WebsiteSetting = {
   siteName: "Dr. Rashed",
+  siteUrl: "https://drrashed.bd",
   footerDescription: "A modern doctor portfolio and appointment experience with scheduling, accounting, and SEO tools.",
   contactPhone: "+8801700000000",
   contactEmail: "appointments@drrashed.com",
@@ -268,6 +269,17 @@ export const websiteSetting: WebsiteSetting = {
   xUrl: "",
   youtubeUrl: "",
   telegramUrl: "",
+  googleSearchConsoleVerification: "",
+  googleAnalyticsId: "",
+  googleTagManagerId: "",
+  bingVerification: "",
+  yandexVerification: "",
+  facebookDomainVerification: "",
+  customHeadScript: "",
+  allowIndexing: true,
+  robotsTxtCustom: "",
+  sitemapEnabled: true,
+  disallowedPaths: ["/admin", "/api"],
   defaultSeo: {
     seoTitle: "Doctor Portfolio & Appointment System",
     metaDescription: "Doctor portfolio, schedules, booking, clinic accounting, and SEO management."
