@@ -20,7 +20,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
-import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
+import { useLanguage } from "@/context/language-context";
+import { formatLocalizedTime } from "@/lib/i18n/translations";
 
 export type PatientAppointment = {
   _id: string;
@@ -73,6 +75,7 @@ export function PatientPortalView({
   records: PatientMedicalRecord[];
   payments: PatientPayment[];
 }) {
+  const { t, translate, formatCurrency, formatNumber, language } = useLanguage();
   const [patient, setPatient] = useState<PatientSession>(initialPatient);
   const [activeTab, setActiveTab] = useState<"appointments" | "records" | "payments">("appointments");
 
@@ -117,7 +120,7 @@ export function PatientPortalView({
           mobileNumber: newMobile,
           address: newAddress
         });
-        setPhoneSuccess("Mobile number and profile updated successfully!");
+        setPhoneSuccess(t("portal.profileUpdated"));
         setTimeout(() => {
           setIsEditingPhone(false);
           setPhoneSuccess("");
@@ -153,7 +156,7 @@ export function PatientPortalView({
             <div className="flex items-center justify-between">
               <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-ink">
                 <UserRound className="size-3.5 text-blue" />
-                Patient Identity
+                {t("portal.identityBadge")}
               </div>
               <Button
                 variant="outline"
@@ -164,39 +167,43 @@ export function PatientPortalView({
                   setNewAddress(patient.address || "");
                   setIsEditingPhone(true);
                 }}
-                className="h-8 gap-1.5 text-xs font-semibold rounded-full border-blue/30 text-blue hover:bg-blue/5 hover:border-blue"
+                className="h-8 gap-1.5 text-xs font-semibold rounded-full border-blue/30 text-blue hover:bg-blue/5 hover:border-blue cursor-pointer"
               >
                 <Edit2 className="size-3.5" />
-                Change Number
+                {t("portal.changeNumber")}
               </Button>
             </div>
 
-            <h2 className="mt-4 text-2xl font-extrabold text-ink">{patient.fullName || "Patient Profile"}</h2>
-            <p className="mt-1 text-xs text-muted">Your verified profile details for serial bookings & prescriptions.</p>
+            <h2 className="mt-4 text-2xl font-extrabold text-ink">
+              {translate(patient.fullName) || t("portal.identityBadge")}
+            </h2>
+            <p className="mt-1 text-xs text-muted">
+              {t("portal.profileDetailsDesc")}
+            </p>
 
             <div className="mt-5 grid gap-3 rounded-2xl border border-line bg-panel p-4 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted">Mobile Number</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("booking.mobileNumber")}</span>
                 <span className="font-bold text-ink flex items-center gap-1.5">
                   <Phone className="size-3.5 text-blue" />
-                  {patient.mobileNumber || "Not provided"}
+                  {patient.mobileNumber || t("portal.notProvided")}
                 </span>
               </div>
               <div className="flex items-center justify-between border-t border-line/60 pt-2.5">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted">Registered Name</span>
-                <span className="font-bold text-ink">{patient.fullName}</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("portal.registeredName")}</span>
+                <span className="font-bold text-ink">{translate(patient.fullName)}</span>
               </div>
               {patient.address ? (
                 <div className="flex items-center justify-between border-t border-line/60 pt-2.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">Address</span>
-                  <span className="font-medium text-ink truncate max-w-[200px]">{patient.address}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("booking.address")}</span>
+                  <span className="font-medium text-ink truncate max-w-[200px]">{translate(patient.address)}</span>
                 </div>
               ) : null}
             </div>
           </div>
 
           <p className="mt-4 text-[11px] text-muted">
-            Tip: All queue notifications and appointment serial numbers are sent to this mobile number.
+            {t("portal.smsTip")}
           </p>
         </div>
 
@@ -205,27 +212,27 @@ export function PatientPortalView({
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-ink">
               <CalendarDays className="size-3.5 text-blue" />
-              Schedule a Visit
+              {t("portal.scheduleVisitBadge")}
             </div>
-            <h2 className="mt-4 text-2xl font-extrabold text-ink">Book New Consultation</h2>
+            <h2 className="mt-4 text-2xl font-extrabold text-ink">{t("portal.bookNewConsultation")}</h2>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              Select an upcoming chamber schedule to book your doctor visit queue serial with instant confirmation.
+              {t("portal.bookNewDesc")}
             </p>
 
             <div className="mt-5 rounded-2xl border border-blue/20 bg-blue/5 p-4 text-xs text-slate-700 space-y-1.5">
               <p className="font-bold text-blue flex items-center gap-1.5">
-                <Check className="size-4 text-blue" /> Auto-populated Booking
+                <Check className="size-4 text-blue" /> {t("portal.autoPopulatedTitle")}
               </p>
               <p className="text-[12px] leading-relaxed text-muted">
-                Your profile information is automatically filled in for quick 1-click slot reservation.
+                {t("portal.autoPopulatedDesc")}
               </p>
             </div>
           </div>
 
           <div className="mt-6">
             <Link href="/appointments">
-              <Button variant="gold" size="lg" className="w-full h-12 rounded-full font-bold gap-2 text-sm shadow-sm hover:shadow-md">
-                Browse Available Schedules
+              <Button variant="gold" size="lg" className="w-full h-12 rounded-full font-bold gap-2 text-sm shadow-sm hover:shadow-md cursor-pointer">
+                {t("portal.browseSchedules")}
                 <span className="grid size-5 place-items-center rounded-full bg-ink text-white">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
                     <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -242,11 +249,11 @@ export function PatientPortalView({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-in fade-in-50">
           <div className="w-full max-w-md rounded-3xl border border-line bg-white p-7 shadow-2xl animate-in zoom-in-95">
             <div className="flex items-center justify-between pb-4 border-b border-line">
-              <h3 className="text-xl font-bold text-ink">Change Mobile Number</h3>
+              <h3 className="text-xl font-bold text-ink">{t("portal.editModalTitle")}</h3>
               <button
                 type="button"
                 onClick={() => setIsEditingPhone(false)}
-                className="grid size-8 place-items-center rounded-full text-muted hover:bg-slate-100 hover:text-ink"
+                className="grid size-8 place-items-center rounded-full text-muted hover:bg-slate-100 hover:text-ink cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -254,7 +261,7 @@ export function PatientPortalView({
 
             <form onSubmit={handleUpdateProfile} className="mt-5 space-y-4">
               <label className="grid gap-1.5 text-xs font-bold uppercase tracking-wider text-ink">
-                Full Name <span className="text-red-500">*</span>
+                {t("booking.patientName")} <span className="text-red-500">*</span>
                 <Input
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
@@ -264,7 +271,7 @@ export function PatientPortalView({
               </label>
 
               <label className="grid gap-1.5 text-xs font-bold uppercase tracking-wider text-ink">
-                Mobile Number <span className="text-red-500">*</span>
+                {t("booking.mobileNumber")} <span className="text-red-500">*</span>
                 <Input
                   value={newMobile}
                   onChange={(e) => setNewMobile(e.target.value)}
@@ -275,11 +282,11 @@ export function PatientPortalView({
               </label>
 
               <label className="grid gap-1.5 text-xs font-bold uppercase tracking-wider text-ink">
-                Address <span className="text-muted text-[10px] lowercase font-normal">(optional)</span>
+                {t("booking.address")} <span className="text-muted text-[10px] lowercase font-normal">{t("booking.addressOptional")}</span>
                 <Input
                   value={newAddress}
                   onChange={(e) => setNewAddress(e.target.value)}
-                  placeholder="Area / Village"
+                  placeholder={t("booking.addressPlaceholder")}
                   className="h-11 rounded-xl bg-panel"
                 />
               </label>
@@ -294,18 +301,18 @@ export function PatientPortalView({
                   size="md"
                   onClick={() => setIsEditingPhone(false)}
                   disabled={savingPhone}
-                  className="rounded-full"
+                  className="rounded-full cursor-pointer"
                 >
-                  Cancel
+                  {t("portal.cancel")}
                 </Button>
                 <Button
                   type="submit"
                   variant="gold"
                   size="md"
                   disabled={savingPhone}
-                  className="rounded-full font-bold min-w-28"
+                  className="rounded-full font-bold min-w-28 cursor-pointer"
                 >
-                  {savingPhone ? "Saving..." : "Save Changes"}
+                  {savingPhone ? t("portal.saving") : t("portal.saveChanges")}
                 </Button>
               </div>
             </form>
@@ -320,48 +327,48 @@ export function PatientPortalView({
           <button
             type="button"
             onClick={() => setActiveTab("appointments")}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all shrink-0 cursor-pointer ${
               activeTab === "appointments"
                 ? "border-blue text-blue bg-white rounded-t-xl shadow-xs"
                 : "border-transparent text-muted hover:text-ink"
             }`}
           >
             <ClipboardList className="size-4" />
-            Appointment History
+            {t("portal.tabAppointments")}
             <span className={`px-2 py-0.5 text-xs rounded-full font-bold ${activeTab === "appointments" ? "bg-blue/10 text-blue" : "bg-slate-200 text-slate-600"}`}>
-              {appointments.length}
+              {formatNumber(appointments.length)}
             </span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("records")}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all shrink-0 cursor-pointer ${
               activeTab === "records"
                 ? "border-blue text-blue bg-white rounded-t-xl shadow-xs"
                 : "border-transparent text-muted hover:text-ink"
             }`}
           >
             <FileText className="size-4" />
-            Medical Records
+            {t("portal.tabRecords")}
             <span className={`px-2 py-0.5 text-xs rounded-full font-bold ${activeTab === "records" ? "bg-blue/10 text-blue" : "bg-slate-200 text-slate-600"}`}>
-              {records.length}
+              {formatNumber(records.length)}
             </span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("payments")}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all shrink-0 cursor-pointer ${
               activeTab === "payments"
                 ? "border-blue text-blue bg-white rounded-t-xl shadow-xs"
                 : "border-transparent text-muted hover:text-ink"
             }`}
           >
             <Banknote className="size-4" />
-            Payment Records
+            {t("portal.tabPayments")}
             <span className={`px-2 py-0.5 text-xs rounded-full font-bold ${activeTab === "payments" ? "bg-blue/10 text-blue" : "bg-slate-200 text-slate-600"}`}>
-              {payments.length}
+              {formatNumber(payments.length)}
             </span>
           </button>
         </div>
@@ -372,11 +379,11 @@ export function PatientPortalView({
             {pagedAppts.items.length === 0 ? (
               <div className="py-12 text-center text-muted">
                 <ClipboardList className="mx-auto size-12 text-slate-300 mb-3" />
-                <p className="font-bold text-ink">No appointments found</p>
-                <p className="text-xs mt-1">Book your first doctor consultation to track serial queue and status here.</p>
+                <p className="font-bold text-ink">{t("portal.noAppointments")}</p>
+                <p className="text-xs mt-1">{t("portal.noAppointmentsDesc")}</p>
                 <Link href="/appointments" className="mt-4 inline-block">
-                  <Button variant="gold" size="sm" className="rounded-full font-bold">
-                    Book an Appointment
+                  <Button variant="gold" size="sm" className="rounded-full font-bold cursor-pointer">
+                    {t("portal.bookFirstAppt")}
                   </Button>
                 </Link>
               </div>
@@ -384,6 +391,7 @@ export function PatientPortalView({
               <div className="grid gap-4 sm:grid-cols-2">
                 {pagedAppts.items.map((appointment) => {
                   const status = appointment.status || "pending";
+                  const queueNum = appointment.queueNumber ? formatNumber(appointment.queueNumber) : "-";
                   return (
                     <div
                       key={appointment._id}
@@ -402,17 +410,20 @@ export function PatientPortalView({
                           {status.toUpperCase()}
                         </Badge>
                         <span className="text-xs font-bold text-blue bg-blue/10 px-2.5 py-1 rounded-full border border-blue/20">
-                          Queue #{appointment.queueNumber ?? "-"}
+                          {t("portal.queueNumber", { number: queueNum })}
                         </span>
                       </div>
 
                       <div>
                         <h4 className="font-bold text-ink text-base">
-                          {appointment.hospitalName || "Chamber Visit"}
+                          {translate(appointment.hospitalName) || "Chamber Visit"}
                         </h4>
                         {appointment.slotStart && (
                           <p className="text-xs font-medium text-muted mt-1">
-                            Slot: <span className="text-ink font-semibold">{formatDateTime(appointment.slotStart)}</span>
+                            {t("portal.slot")}{" "}
+                            <span className="text-ink font-semibold">
+                              {formatLocalizedTime(formatDateTime(appointment.slotStart), language)}
+                            </span>
                           </p>
                         )}
                       </div>
@@ -420,7 +431,7 @@ export function PatientPortalView({
                       {appointment.patientMessage && (
                         <div className="flex items-start gap-2 rounded-xl bg-white p-3 border border-line text-xs text-muted">
                           <MessageSquare className="size-3.5 text-blue shrink-0 mt-0.5" />
-                          <span>{appointment.patientMessage}</span>
+                          <span>{translate(appointment.patientMessage)}</span>
                         </div>
                       )}
                     </div>
@@ -447,22 +458,24 @@ export function PatientPortalView({
             {pagedRecords.items.length === 0 ? (
               <div className="py-12 text-center text-muted">
                 <FileText className="mx-auto size-12 text-slate-300 mb-3" />
-                <p className="font-bold text-ink">No medical records yet</p>
-                <p className="text-xs mt-1">Prescriptions, diagnoses, and doctor visit summaries will appear here.</p>
+                <p className="font-bold text-ink">{t("portal.noRecords")}</p>
+                <p className="text-xs mt-1">{t("portal.noRecordsDesc")}</p>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 {pagedRecords.items.map((record) => (
                   <div key={record._id} className="rounded-2xl border border-line bg-panel p-5 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-blue text-sm">{record.hospitalName || "Clinic Visit"}</span>
+                      <span className="font-bold text-blue text-sm">{translate(record.hospitalName) || "Clinic Visit"}</span>
                       {record.visitDate && (
-                        <span className="text-xs text-muted font-medium">{formatDateTime(record.visitDate)}</span>
+                        <span className="text-xs text-muted font-medium">
+                          {formatLocalizedTime(formatDateTime(record.visitDate), language)}
+                        </span>
                       )}
                     </div>
                     {record.diagnosis && (
                       <p className="text-sm font-semibold text-ink">
-                        Diagnosis: <span className="font-normal text-[#444]">{record.diagnosis}</span>
+                        {t("portal.diagnosis")} <span className="font-normal text-[#444]">{translate(record.diagnosis)}</span>
                       </p>
                     )}
                     {record.prescription && (
@@ -471,7 +484,7 @@ export function PatientPortalView({
                       </div>
                     )}
                     {record.doctorNotes && (
-                      <p className="text-xs text-muted italic">Notes: {record.doctorNotes}</p>
+                      <p className="text-xs text-muted italic">{t("portal.notes")} {translate(record.doctorNotes)}</p>
                     )}
                   </div>
                 ))}
@@ -496,8 +509,8 @@ export function PatientPortalView({
             {pagedPayments.items.length === 0 ? (
               <div className="py-12 text-center text-muted">
                 <Banknote className="mx-auto size-12 text-slate-300 mb-3" />
-                <p className="font-bold text-ink">No payment records found</p>
-                <p className="text-xs mt-1">Invoices and payment receipts will appear here after booking.</p>
+                <p className="font-bold text-ink">{t("portal.noPayments")}</p>
+                <p className="text-xs mt-1">{t("portal.noPaymentsDesc")}</p>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
@@ -509,10 +522,17 @@ export function PatientPortalView({
                       </Badge>
                       <span className="text-base font-extrabold text-ink">{formatCurrency(payment.totalAmount ?? 0)}</span>
                     </div>
-                    <p className="text-xs font-bold text-ink">{payment.hospitalName || "Consultation Chamber"}</p>
+                    <p className="text-xs font-bold text-ink">{translate(payment.hospitalName) || "Consultation Chamber"}</p>
                     <div className="flex items-center justify-between text-xs text-muted border-t border-line/60 pt-2">
-                      <span>Method: {payment.paymentMethod || "Cash"}</span>
-                      <span>{payment.paymentDate ? formatDateTime(payment.paymentDate) : ""}</span>
+                      <span>
+                        {t("portal.method")}{" "}
+                        {payment.paymentMethod === "cash" || payment.paymentMethod === "Cash" || !payment.paymentMethod
+                          ? t("portal.cash")
+                          : payment.paymentMethod}
+                      </span>
+                      <span>
+                        {payment.paymentDate ? formatLocalizedTime(formatDateTime(payment.paymentDate), language) : ""}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -546,14 +566,18 @@ function PaginationBar({
   totalItems: number;
   onPageChange: (page: number) => void;
 }) {
+  const { t, formatNumber } = useLanguage();
   const start = (currentPage - 1) * ITEMS_PER_PAGE + 1;
   const end = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-line pt-4 text-xs text-muted">
       <span>
-        Showing <strong className="text-ink">{start}</strong> - <strong className="text-ink">{end}</strong> of{" "}
-        <strong className="text-ink">{totalItems}</strong> entries
+        {t("portal.showingPagination", {
+          start: formatNumber(start),
+          end: formatNumber(end),
+          total: formatNumber(totalItems)
+        })}
       </span>
 
       <div className="flex items-center gap-1.5">
@@ -562,10 +586,10 @@ function PaginationBar({
           size="sm"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
-          className="h-8 px-2.5 rounded-lg gap-1 text-xs"
+          className="h-8 px-2.5 rounded-lg gap-1 text-xs cursor-pointer"
         >
           <ChevronLeft className="size-3.5" />
-          Prev
+          {t("portal.prev")}
         </Button>
 
         {Array.from({ length: totalPages }).map((_, idx) => {
@@ -576,11 +600,11 @@ function PaginationBar({
               key={page}
               type="button"
               onClick={() => onPageChange(page)}
-              className={`size-8 rounded-lg text-xs font-bold transition-all ${
+              className={`size-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 isActive ? "bg-blue text-white shadow-xs" : "border border-line bg-panel text-ink hover:bg-slate-100"
               }`}
             >
-              {page}
+              {formatNumber(page)}
             </button>
           );
         })}
@@ -590,9 +614,9 @@ function PaginationBar({
           size="sm"
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
-          className="h-8 px-2.5 rounded-lg gap-1 text-xs"
+          className="h-8 px-2.5 rounded-lg gap-1 text-xs cursor-pointer"
         >
-          Next
+          {t("portal.next")}
           <ChevronRight className="size-3.5" />
         </Button>
       </div>

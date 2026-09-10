@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { Building2, Calendar, Clock, ExternalLink, MapPin, Phone } from "lucide-react";
 import type { Hospital, WebsiteSetting } from "@/lib/types";
-import { formatCurrency, safeImageSrc } from "@/lib/utils";
+import { safeImageSrc } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/context/language-context";
+import { formatLocalizedTime } from "@/lib/i18n/translations";
 
 function phoneHref(phone?: string) {
   const value = phone?.replace(/[^\d+]/g, "");
@@ -21,12 +22,15 @@ export function ChambersSection({
   content?: WebsiteSetting["content"];
   doctorPhone?: string;
 }) {
+  const { t, translate, formatCurrency, language } = useLanguage();
   const activeHospitals = hospitals.filter((h) => h.active !== false);
   const displayHospitals = activeHospitals.length > 0 ? activeHospitals : hospitals;
 
   if (displayHospitals.length === 0) {
     return null;
   }
+
+  const badgeText = content?.contactBadge ? translate(content.contactBadge) : t("chambers.badge");
 
   return (
     <section id="chambers" className="py-16 lg:py-20 bg-[#f9fafb] border-b border-line">
@@ -36,13 +40,13 @@ export function ChambersSection({
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1 text-xs font-semibold text-ink shadow-sm">
               <span className="grid size-3.5 place-items-center rounded-full bg-blue text-[8px] text-white">✓</span>
-              {content?.contactBadge || "Consultation Chambers"}
+              {badgeText}
             </div>
             <h2 className="mt-3 text-3xl font-extrabold leading-tight text-ink sm:text-4xl lg:text-[38px]">
-              Chamber List
+              {t("chambers.title")}
             </h2>
             <p className="mt-3 max-w-2xl text-[16px] leading-relaxed text-muted">
-              Choose your preferred hospital or clinic chamber location. View consulting days, visiting hours, and book appointments easily.
+              {t("chambers.description")}
             </p>
           </div>
         </div>
@@ -57,7 +61,10 @@ export function ChambersSection({
               Array.isArray(hospital.visitingDays) && hospital.visitingDays.length > 0
                 ? hospital.visitingDays
                 : ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
-            const hours = hospital.visitingHours || "05:00 PM - 09:00 PM";
+            const rawHours = hospital.visitingHours || "05:00 PM - 09:00 PM";
+            const hours = formatLocalizedTime(rawHours, language);
+            const hospitalName = translate(hospital.name);
+            const hospitalAddress = translate(hospital.address);
             const mapDirectionsUrl =
               hospital.mapUrl && !hospital.mapUrl.includes("output=embed")
                 ? hospital.mapUrl
@@ -74,7 +81,7 @@ export function ChambersSection({
                     {hospital.image ? (
                       <img
                         src={safeImageSrc(hospital.image, "/placeholder.svg")}
-                        alt={hospital.name}
+                        alt={hospitalName}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         onError={(e) => {
                           e.currentTarget.src = "/placeholder.svg";
@@ -87,13 +94,13 @@ export function ChambersSection({
                     )}
                     <div className="absolute top-3 right-3">
                       <Badge className="bg-white/95 text-ink border-line font-bold shadow-sm backdrop-blur-sm">
-                        {formatCurrency(fee)} Fee
+                        {formatCurrency(fee)} {t("chambers.fee")}
                       </Badge>
                     </div>
                     <div className="absolute top-3 left-3">
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600/90 backdrop-blur-sm px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-sm">
                         <span className="size-1.5 rounded-full bg-emerald-200 animate-pulse" />
-                        Chamber
+                        {t("chambers.tag")}
                       </span>
                     </div>
                   </div>
@@ -103,11 +110,11 @@ export function ChambersSection({
                     {/* Title */}
                     <div>
                       <h3 className="text-xl font-bold text-ink leading-snug group-hover:text-blue transition-colors">
-                        {hospital.name}
+                        {hospitalName}
                       </h3>
                       <p className="mt-2 flex items-start gap-2 text-sm text-muted leading-relaxed">
                         <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-blue" />
-                        <span>{hospital.address}</span>
+                        <span>{hospitalAddress}</span>
                       </p>
                     </div>
 
@@ -132,17 +139,21 @@ export function ChambersSection({
                     <div className="rounded-xl border border-line bg-panel p-3.5 space-y-2">
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-ink">
                         <Calendar className="h-3.5 w-3.5 text-blue" />
-                        <span>Visiting Days</span>
+                        <span>{t("chambers.visitingDays")}</span>
                       </div>
                       <div className="flex flex-wrap gap-1">
-                        {days.map((day) => (
-                          <span
-                            key={day}
-                            className="rounded-md bg-white border border-line px-2 py-0.5 text-xs font-medium text-ink shadow-2xs"
-                          >
-                            {day.length > 3 ? day.slice(0, 3) : day}
-                          </span>
-                        ))}
+                        {days.map((day) => {
+                          const translatedDay =
+                            t(`day.${day}`, {}, t(`day.full.${day}`, {}, day.length > 3 ? day.slice(0, 3) : day));
+                          return (
+                            <span
+                              key={day}
+                              className="rounded-md bg-white border border-line px-2 py-0.5 text-xs font-medium text-ink shadow-2xs"
+                            >
+                              {translatedDay}
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -150,7 +161,7 @@ export function ChambersSection({
                     <div className="rounded-xl border border-line bg-panel p-3.5 space-y-1">
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-ink">
                         <Clock className="h-3.5 w-3.5 text-blue" />
-                        <span>Visiting Hours</span>
+                        <span>{t("chambers.visitingHours")}</span>
                       </div>
                       <p className="text-sm font-bold text-ink">
                         {hours}
@@ -168,13 +179,13 @@ export function ChambersSection({
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-blue transition-colors"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    <span>View on Map</span>
+                    <span>{t("chambers.viewOnMap")}</span>
                   </a>
                   <Link
                     href="#schedules"
                     className="inline-flex items-center justify-center gap-1.5 rounded-full bg-blue hover:bg-blue/90 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:-translate-y-0.5"
                   >
-                    Book Appointment
+                    {t("chambers.bookAppointment")}
                   </Link>
                 </div>
               </div>

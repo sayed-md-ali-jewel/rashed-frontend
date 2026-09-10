@@ -1444,7 +1444,11 @@ export function AdminPanel() {
   }, [incomes, expenses]);
 
   return (
-    <div className="flex min-h-screen bg-[#0d131f] text-slate-100 antialiased selection:bg-teal-500/30 selection:text-teal-200">
+    <div
+      className="admin-portal font-sans flex min-h-screen bg-[#0d131f] text-slate-100 antialiased selection:bg-teal-500/30 selection:text-teal-200"
+      data-admin-root="true"
+      lang="en"
+    >
       {/* Sweet Alert Dialog */}
       <SweetAlertModal
         config={swal}

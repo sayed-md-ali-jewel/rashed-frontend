@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
-import { Phone } from "lucide-react";
-import { LogoutButton } from "@/components/auth/logout-button";
+import { PatientHeader } from "@/components/patient/patient-header";
 import {
   PatientPortalView,
   type PatientAppointment,
@@ -31,23 +30,7 @@ export default async function PatientPortalPage() {
   return (
     <main className="min-h-screen bg-cream py-10 lg:py-16">
       <div className="mx-auto max-w-[1340px] px-4 sm:px-6">
-        <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end mb-8">
-          <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1 text-xs font-semibold text-ink shadow-sm mb-3">
-              <span className="grid size-3.5 place-items-center rounded-full bg-blue text-[8px] text-white">✓</span>
-              Patient Portal
-            </div>
-            <h1 className="text-3xl font-extrabold leading-tight text-ink sm:text-4xl">
-              Welcome, {patient.fullName}
-            </h1>
-            <p className="mt-1.5 flex items-center gap-2 text-sm text-muted">
-              <Phone className="h-4 w-4 text-blue" />
-              <span>{patient.mobileNumber || "Mobile registered"}</span>
-            </p>
-          </div>
-          <LogoutButton mode="patient" />
-        </div>
-
+        <PatientHeader patient={patient} />
         <PatientPortalView
           initialPatient={patient}
           appointments={appointments}

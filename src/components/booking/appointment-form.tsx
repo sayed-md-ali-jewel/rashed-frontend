@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { generateSlots } from "@/lib/booking";
 import type { Schedule, WebsiteSetting } from "@/lib/types";
 import { formatSlotRange12 } from "@/lib/utils";
+import { useLanguage } from "@/context/language-context";
+import { formatLocalizedTime } from "@/lib/i18n/translations";
 
 const appointmentSchema = z.object({
   patientName: z.string().trim().min(2, "Please enter your full name"),
@@ -23,9 +25,10 @@ export function AppointmentForm({
   initialPatient
 }: {
   schedule: Schedule;
-  content: WebsiteSetting["content"];
+  content?: WebsiteSetting["content"];
   initialPatient?: { fullName?: string; mobileNumber?: string; address?: string };
 }) {
+  const { t, translate, language } = useLanguage();
   const slots = useMemo(() => generateSlots(schedule), [schedule]);
   const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [isOpen, setIsOpen] = useState(false);
@@ -61,7 +64,7 @@ export function AppointmentForm({
     if (!parsed.success) {
       setLoading(false);
       setState("error");
-      setMessage(content.appointmentValidationMessage || "Please fill in all fields correctly.");
+      setMessage(t("booking.validationError"));
       return;
     }
 
@@ -76,16 +79,20 @@ export function AppointmentForm({
       setState(response.ok ? "success" : "error");
       setMessage(
         response.ok
-          ? content.appointmentSuccessMessage.replace("{queueNumber}", String(result.queueNumber ?? ""))
-          : result.error ?? "Failed to book appointment"
+          ? t("booking.successMessage", { queueNumber: result.queueNumber ?? "" })
+          : result.error ?? (language === "bn" ? "অ্যাপয়েন্টমেন্ট বুকিং ব্যর্থ হয়েছে" : "Failed to book appointment")
       );
     } catch {
       setState("error");
-      setMessage("Failed to connect to booking server. Please try again.");
+      setMessage(t("booking.serverError"));
     } finally {
       setLoading(false);
     }
   }
+
+  const badgeText = content?.appointmentFormBadge ? translate(content.appointmentFormBadge) : t("booking.formBadge");
+  const titleText = content?.appointmentFormTitle ? translate(content.appointmentFormTitle) : t("booking.formTitle");
+  const descText = content?.appointmentFormDescription ? translate(content.appointmentFormDescription) : t("booking.formDescription");
 
   return (
     <div className="sticky top-24 rounded-3xl border border-line bg-white p-7 sm:p-9 lg:p-10 shadow-lg transition-all">
@@ -93,25 +100,25 @@ export function AppointmentForm({
         <div className="mb-7 pb-6 border-b border-line">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3.5 py-1 text-xs font-semibold text-ink">
             <span className="grid size-3.5 place-items-center rounded-full bg-blue text-[8px] text-white">✓</span>
-            {content.appointmentFormBadge || "Instant Serial Booking"}
+            {badgeText}
           </div>
           <h2 className="mt-3.5 text-2xl sm:text-3xl font-extrabold leading-tight text-ink">
-            {content.appointmentFormTitle || "Book Your Serial Slot"}
+            {titleText}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            {content.appointmentFormDescription || "Select your preferred slot and enter patient details."}
+            {descText}
           </p>
         </div>
 
         <div className="grid gap-5">
           <label className="grid gap-2 text-xs font-bold uppercase tracking-wider text-ink">
             <span>
-              {content.patientNameLabel || "Patient Name"} <span className="text-red-500">*</span>
+              {t("booking.patientName")} <span className="text-red-500">*</span>
             </span>
             <Input
               name="patientName"
               defaultValue={initialPatient?.fullName || ""}
-              placeholder={content.patientNamePlaceholder || "Enter full name"}
+              placeholder={t("booking.patientNamePlaceholder")}
               autoComplete="name"
               required
               className="h-12 px-4 rounded-2xl border border-line bg-panel text-sm font-normal text-ink focus:bg-white focus:ring-2 focus:ring-blue transition-all"
@@ -120,12 +127,12 @@ export function AppointmentForm({
 
           <label className="grid gap-2 text-xs font-bold uppercase tracking-wider text-ink">
             <span>
-              {content.patientAddressLabel || "Address"} <span className="text-muted text-[11px] font-normal lowercase">(optional)</span>
+              {t("booking.address")} <span className="text-muted text-[11px] font-normal lowercase">{t("booking.addressOptional")}</span>
             </span>
             <Input
               name="address"
               defaultValue={initialPatient?.address || ""}
-              placeholder={content.patientAddressPlaceholder || "Patient village / area"}
+              placeholder={t("booking.addressPlaceholder")}
               autoComplete="street-address"
               className="h-12 px-4 rounded-2xl border border-line bg-panel text-sm font-normal text-ink focus:bg-white focus:ring-2 focus:ring-blue transition-all"
             />
@@ -133,12 +140,12 @@ export function AppointmentForm({
 
           <label className="grid gap-2 text-xs font-bold uppercase tracking-wider text-ink">
             <span>
-              {content.patientMobileLabel || "Mobile Number"} <span className="text-red-500">*</span>
+              {t("booking.mobileNumber")} <span className="text-red-500">*</span>
             </span>
             <Input
               name="mobileNumber"
               defaultValue={initialPatient?.mobileNumber || ""}
-              placeholder={content.patientMobilePlaceholder || "018XXXXXXXX"}
+              placeholder={t("booking.mobilePlaceholder")}
               autoComplete="tel"
               required
               className="h-12 px-4 rounded-2xl border border-line bg-panel text-sm font-normal text-ink focus:bg-white focus:ring-2 focus:ring-blue transition-all"
@@ -149,10 +156,10 @@ export function AppointmentForm({
           <div className="grid gap-2 text-xs font-bold uppercase tracking-wider text-ink">
             <div className="flex items-center justify-between">
               <span>
-                {content.patientSlotLabel || "Consultation Slot"} <span className="text-red-500">*</span>
+                {t("booking.consultationSlot")} <span className="text-red-500">*</span>
               </span>
               <span className="text-xs font-semibold text-emerald-700 normal-case bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                {availableSlotsCount} available
+                {t("booking.availableCount", { count: availableSlotsCount })}
               </span>
             </div>
 
@@ -162,7 +169,7 @@ export function AppointmentForm({
               <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-full h-13 px-4 py-3 rounded-2xl border transition-all text-left flex items-center justify-between gap-3 ${
+                className={`w-full h-13 px-4 py-3 rounded-2xl border transition-all text-left flex items-center justify-between gap-3 cursor-pointer ${
                   isOpen
                     ? "border-blue ring-2 ring-blue/20 bg-white shadow-md"
                     : selectedSlot
@@ -174,11 +181,11 @@ export function AppointmentForm({
                   <Clock3 className={`size-4.5 shrink-0 ${selectedSlot ? "text-emerald-600" : "text-muted"}`} />
                   {activeSlot ? (
                     <span className="text-sm font-bold text-ink truncate">
-                      {formatSlotRange12(activeSlot.start, activeSlot.end)}
+                      {formatLocalizedTime(formatSlotRange12(activeSlot.start, activeSlot.end), language)}
                     </span>
                   ) : (
                     <span className="text-sm font-normal text-muted truncate">
-                      {content.patientSlotPlaceholder || "Choose an available slot"}
+                      {t("booking.chooseSlotPlaceholder")}
                     </span>
                   )}
                 </div>
@@ -187,7 +194,7 @@ export function AppointmentForm({
                   {activeSlot ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/90 px-2.5 py-1 text-xs font-bold text-emerald-800 border border-emerald-300">
                       <span className="size-1.5 rounded-full bg-emerald-600"></span>
-                      Available
+                      {t("booking.available")}
                     </span>
                   ) : null}
                   <ChevronDown className={`size-4.5 text-muted transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
@@ -197,16 +204,16 @@ export function AppointmentForm({
               {isOpen && (
                 <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl border border-line bg-white shadow-2xl overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150">
                   <div className="flex items-center justify-between border-b border-line bg-panel px-4 py-3 text-xs font-semibold text-muted">
-                    <span>Select Time Slot</span>
+                    <span>{t("booking.selectTimeSlot")}</span>
                     <div className="flex items-center gap-3">
                       <span className="flex items-center gap-1 text-emerald-700 font-bold">
                         <span className="size-2 rounded-full bg-emerald-500"></span>
-                        {availableSlotsCount} Available
+                        {t("booking.slotsAvailableHeader", { count: availableSlotsCount })}
                       </span>
                       {bookedSlotsCount > 0 && (
                         <span className="flex items-center gap-1 text-zinc-400">
                           <span className="size-1.5 rounded-full bg-zinc-300"></span>
-                          {bookedSlotsCount} Booked
+                          {t("booking.slotsBookedHeader", { count: bookedSlotsCount })}
                         </span>
                       )}
                     </div>
@@ -214,10 +221,11 @@ export function AppointmentForm({
 
                   <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 p-2">
                     {slots.length === 0 ? (
-                      <div className="p-8 text-center text-sm text-muted">No slots available for this session.</div>
+                      <div className="p-8 text-center text-sm text-muted">{t("booking.noSlots")}</div>
                     ) : (
                       slots.map((slot) => {
                         const isSelected = selectedSlot === slot.start;
+                        const slotFormatted = formatLocalizedTime(formatSlotRange12(slot.start, slot.end), language);
                         return (
                           <button
                             key={slot.start}
@@ -240,7 +248,7 @@ export function AppointmentForm({
                             <div className="flex items-center gap-3">
                               <Clock3 className={`size-4 ${isSelected ? "text-blue" : slot.available ? "text-slate-400" : "text-zinc-300"}`} />
                               <span className={`text-sm ${isSelected ? "font-bold text-blue" : slot.available ? "font-medium text-ink" : "text-zinc-400 line-through"}`}>
-                                {formatSlotRange12(slot.start, slot.end)}
+                                {slotFormatted}
                               </span>
                             </div>
 
@@ -248,11 +256,11 @@ export function AppointmentForm({
                               {slot.available ? (
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
                                   <span className="size-1.5 rounded-full bg-emerald-500"></span>
-                                  Available
+                                  {t("booking.available")}
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-500 border border-zinc-200">
-                                  Booked
+                                  {t("booking.booked")}
                                 </span>
                               )}
                               {isSelected && <Check className="size-4.5 text-blue shrink-0" />}
@@ -272,9 +280,9 @@ export function AppointmentForm({
             variant="gold"
             size="lg"
             disabled={loading || !selectedSlot}
-            className="w-full mt-3 h-14 rounded-full py-4 text-base font-extrabold gap-2.5 shadow-md hover:shadow-xl transition-all"
+            className="w-full mt-3 h-14 rounded-full py-4 text-base font-extrabold gap-2.5 shadow-md hover:shadow-xl transition-all cursor-pointer"
           >
-            {loading ? "Processing Booking..." : content.appointmentSubmitButton || "Confirm & Book Slot"}
+            {loading ? t("booking.processing") : t("booking.submitButton")}
             <span className="grid size-6 place-items-center rounded-full bg-ink text-white">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                 <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />

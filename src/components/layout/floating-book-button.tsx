@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarPlus } from "lucide-react";
+import { useLanguage } from "@/context/language-context";
 
 export function FloatingBookButton() {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   // Hide on admin routes or when already on the appointments page
   if (pathname.startsWith("/admin") || pathname === "/appointments") {
@@ -16,8 +18,8 @@ export function FloatingBookButton() {
     <div className="fixed bottom-5 right-5 z-40 lg:hidden animate-in fade-in duration-300">
       <Link
         href="/appointments"
-        className="group relative flex items-center justify-center size-14 rounded-full transition-transform duration-200 hover:scale-105 active:scale-95"
-        aria-label="Book Appointment"
+        className="group relative flex items-center justify-center size-14 rounded-full transition-transform duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+        aria-label={t("floating.book")}
       >
         {/* Blue Animated Wave (Sonar Ping) */}
         <span className="absolute -inset-1.5 rounded-full border-2 border-sky-400 animate-ping opacity-60 pointer-events-none"></span>

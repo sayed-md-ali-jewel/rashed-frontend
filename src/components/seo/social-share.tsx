@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Copy, Facebook, Linkedin, MessageCircle, Send, Twitter } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/context/language-context";
 
 const channels = [
   {
@@ -38,6 +38,7 @@ const channels = [
 ];
 
 export function SocialShare({ title, path }: { title: string; path: string }) {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [fullUrl, setFullUrl] = useState("");
 
@@ -75,12 +76,12 @@ export function SocialShare({ title, path }: { title: string; path: string }) {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`Share on ${channel.label}`}
+            aria-label={t("share.shareOn", { channel: channel.label })}
             className="inline-flex"
           >
             <button
               type="button"
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold shadow-sm transition hover:-translate-y-0.5 ${channel.bg}`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold shadow-sm transition hover:-translate-y-0.5 cursor-pointer ${channel.bg}`}
             >
               <Icon className="h-3.5 w-3.5" />
               <span>{channel.label}</span>
@@ -92,17 +93,17 @@ export function SocialShare({ title, path }: { title: string; path: string }) {
       <button
         type="button"
         onClick={handleCopy}
-        className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-2 text-xs font-semibold text-ink shadow-sm transition hover:bg-panel hover:-translate-y-0.5"
+        className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-2 text-xs font-semibold text-ink shadow-sm transition hover:bg-panel hover:-translate-y-0.5 cursor-pointer"
       >
         {copied ? (
           <>
             <Check className="h-3.5 w-3.5 text-emerald-600" />
-            <span className="text-emerald-700 font-bold">Link Copied!</span>
+            <span className="text-emerald-700 font-bold">{t("share.linkCopied")}</span>
           </>
         ) : (
           <>
             <Copy className="h-3.5 w-3.5 text-muted" />
-            <span>Copy Link</span>
+            <span>{t("share.copyLink")}</span>
           </>
         )}
       </button>

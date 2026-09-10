@@ -2,9 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Kalpurush";
+  src: url("/fonts/kalpurush.woff2") format("woff2"),
+       url("https://fonts.maateen.me/kalpurush/Kalpurush-v0.258.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
-    --font-sans: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-sans: var(--font-poppins, "Poppins"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-english: var(--font-poppins, "Poppins"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-bn: "Kalpurush", "Hind Siliguri", "Noto Sans Bengali", sans-serif;
     --color-cream: #fffaf6;
     --color-band: #fbf3e2;
     --color-gold: #ffc200;
@@ -42,6 +53,144 @@
 
   button, input, select, textarea {
     font-family: inherit;
+  }
+
+  /* When Bangla is active on the public website */
+  html[lang="bn"]:not(:has(.admin-portal)):not(:has([data-admin-root])),
+  html.lang-bn:not(:has(.admin-portal)):not(:has([data-admin-root])),
+  [data-lang="bn"]:not(.admin-portal):not([data-admin-root]) {
+    --font-sans: var(--font-bn);
+    font-size: 104.5%; /* Optical size balance with Latin Poppins */
+  }
+
+  /* Public website text in Bangla mode */
+  html[lang="bn"] *:not(.admin-portal):not([data-admin-root]):not(.admin-portal *):not([data-admin-root] *),
+  html.lang-bn *:not(.admin-portal):not([data-admin-root]):not(.admin-portal *):not([data-admin-root] *),
+  [data-lang="bn"] *:not(.admin-portal):not([data-admin-root]):not(.admin-portal *):not([data-admin-root] *) {
+    font-family: var(--font-bn) !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* Bangla base typography: slightly bolder and prominent */
+  html[lang="bn"] body:not(.admin-portal):not([data-admin-root]),
+  html.lang-bn body:not(.admin-portal):not([data-admin-root]),
+  [data-lang="bn"] body:not(.admin-portal):not([data-admin-root]) {
+    font-weight: 500;
+    line-height: 1.65;
+  }
+
+  /* Bangla headings: robust, bold, and dignified */
+  html[lang="bn"] h1:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] h2:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] h3:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] h4:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] h5:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] h6:not(.admin-portal *):not([data-admin-root] *) {
+    font-weight: 750 !important;
+    line-height: 1.35;
+  }
+
+  /* Bangla buttons: clear, strong, and highly prominent */
+  html[lang="bn"] button:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] .btn:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] [role="button"]:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] a button:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] input[type="submit"]:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] input[type="button"]:not(.admin-portal *):not([data-admin-root] *) {
+    font-weight: 700 !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  /* Bangla paragraphs and lists */
+  html[lang="bn"] p:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] li:not(.admin-portal *):not([data-admin-root] *) {
+    font-weight: 500;
+    line-height: 1.68;
+  }
+
+  /* Bangla font weights enhancement */
+  html[lang="bn"] .font-medium:not(.admin-portal *):not([data-admin-root] *) {
+    font-weight: 600 !important;
+  }
+  html[lang="bn"] .font-semibold:not(.admin-portal *):not([data-admin-root] *) {
+    font-weight: 700 !important;
+  }
+  html[lang="bn"] .font-bold:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] .font-extrabold:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] .font-black:not(.admin-portal *):not([data-admin-root] *) {
+    font-weight: 800 !important;
+  }
+
+  /* Bangla inputs, labels, and forms */
+  html[lang="bn"] label:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] input:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] select:not(.admin-portal *):not([data-admin-root] *),
+  html[lang="bn"] textarea:not(.admin-portal *):not([data-admin-root] *) {
+    font-weight: 550;
+  }
+
+  html[lang="bn"] label span:not(.admin-portal *):not([data-admin-root] *) {
+    font-weight: 700;
+  }
+
+  /* ==========================================================================
+     ADMIN PORTAL: Shared English Font Enforcement
+     Ensures the Admin Portal automatically uses the configured website English font
+     across all sections regardless of current site language selection.
+     ========================================================================== */
+  .admin-portal,
+  [data-admin-root],
+  .admin-portal *,
+  [data-admin-root] * {
+    font-family: var(--font-english) !important;
+  }
+
+  .admin-portal,
+  [data-admin-root] {
+    --font-sans: var(--font-english);
+    font-size: 100% !important;
+    letter-spacing: normal !important;
+  }
+
+  .admin-portal h1,
+  .admin-portal h2,
+  .admin-portal h3,
+  .admin-portal h4,
+  .admin-portal h5,
+  .admin-portal h6,
+  [data-admin-root] h1,
+  [data-admin-root] h2,
+  [data-admin-root] h3,
+  [data-admin-root] h4,
+  [data-admin-root] h5,
+  [data-admin-root] h6 {
+    font-family: var(--font-english) !important;
+    letter-spacing: -0.025em !important;
+  }
+
+  .admin-portal button,
+  .admin-portal input,
+  .admin-portal select,
+  .admin-portal textarea,
+  .admin-portal table,
+  .admin-portal th,
+  .admin-portal td,
+  .admin-portal p,
+  .admin-portal span,
+  .admin-portal label,
+  .admin-portal a,
+  [data-admin-root] button,
+  [data-admin-root] input,
+  [data-admin-root] select,
+  [data-admin-root] textarea,
+  [data-admin-root] table,
+  [data-admin-root] th,
+  [data-admin-root] td,
+  [data-admin-root] p,
+  [data-admin-root] span,
+  [data-admin-root] label,
+  [data-admin-root] a {
+    font-family: var(--font-english) !important;
   }
 }
 

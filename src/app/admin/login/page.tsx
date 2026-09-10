@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminLoginPage() {
   return (
-    <main className="grid min-h-[calc(100vh-76px)] place-items-center bg-cream px-4 py-12">
+    <main className="admin-portal grid min-h-[calc(100vh-76px)] place-items-center bg-cream px-4 py-12 font-sans" data-admin-root="true" lang="en">
       <div className="w-full max-w-5xl">
         <div className="grid items-center gap-10 lg:grid-cols-[1fr_420px]">
           <div>

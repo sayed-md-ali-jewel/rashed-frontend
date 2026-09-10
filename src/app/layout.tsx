@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
 import Script from "next/script";
 import { Poppins } from "next/font/google";
 import "./globals.css";
@@ -7,12 +8,14 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { FloatingBookButton } from "@/components/layout/floating-book-button";
 import { ChunkErrorHandler } from "@/components/layout/chunk-error-handler";
+import { LanguageProvider } from "@/context/language-context";
 import { getWebsiteSetting } from "@/lib/cms-data";
+import type { Language } from "@/lib/i18n/translations";
 
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-sans",
+  variable: "--font-poppins",
   display: "swap"
 });
 
@@ -85,10 +88,26 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const setting = await getWebsiteSetting();
+  const cookieStore = await cookies();
+  const savedLang = cookieStore.get("site_lang")?.value;
+  const initialLang: Language = savedLang === "en" ? "en" : "bn";
 
   return (
-    <html lang="en" className={poppins.variable}>
+    <html
+      lang={initialLang}
+      data-lang={initialLang}
+      className={`${poppins.variable} ${initialLang === "bn" ? "lang-bn" : "lang-en"}`}
+    >
       <head>
+        {/* Preload Kalpurush Bengali Font */}
+        <link
+          rel="preload"
+          href="/fonts/kalpurush.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+
         {/* Service Worker and Cache Buster for legacy PWA / Strapi caches */}
         <script
           dangerouslySetInnerHTML={{
@@ -174,47 +193,49 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         )}
       </head>
       <body className="font-sans antialiased bg-white text-[#141414] selection:bg-[#ffc200] selection:text-[#141414]">
-        {/* Google Tag Manager (noscript) */}
-        {setting.googleTagManagerId && (
-          <noscript>
-            <iframe
-              src={`https://www.googletagmanager.com/ns.html?id=${setting.googleTagManagerId}`}
-              height="0"
-              width="0"
-              style={{ display: "none", visibility: "hidden" }}
-            />
-          </noscript>
-        )}
+        <LanguageProvider initialLanguage={initialLang}>
+          {/* Google Tag Manager (noscript) */}
+          {setting.googleTagManagerId && (
+            <noscript>
+              <iframe
+                src={`https://www.googletagmanager.com/ns.html?id=${setting.googleTagManagerId}`}
+                height="0"
+                width="0"
+                style={{ display: "none", visibility: "hidden" }}
+              />
+            </noscript>
+          )}
 
-        {/* Google Analytics 4 (gtag.js) */}
-        {setting.googleAnalyticsId && (
-          <>
-            <Script
-              strategy="afterInteractive"
-              src={`https://www.googletagmanager.com/gtag/js?id=${setting.googleAnalyticsId}`}
-            />
-            <Script
-              id="google-analytics-init"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${setting.googleAnalyticsId}', {
-                    page_path: window.location.pathname,
-                  });
-                `
-              }}
-            />
-          </>
-        )}
+          {/* Google Analytics 4 (gtag.js) */}
+          {setting.googleAnalyticsId && (
+            <>
+              <Script
+                strategy="afterInteractive"
+                src={`https://www.googletagmanager.com/gtag/js?id=${setting.googleAnalyticsId}`}
+              />
+              <Script
+                id="google-analytics-init"
+                strategy="afterInteractive"
+                dangerouslySetInnerHTML={{
+                  __html: `
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                    gtag('config', '${setting.googleAnalyticsId}', {
+                      page_path: window.location.pathname,
+                    });
+                  `
+                }}
+              />
+            </>
+          )}
 
-        <ChunkErrorHandler />
-        <SiteHeader setting={setting} />
-        <div className="min-h-screen">{children}</div>
-        <FloatingBookButton />
-        <SiteFooter setting={setting} />
+          <ChunkErrorHandler />
+          <SiteHeader setting={setting} />
+          <div className="min-h-screen">{children}</div>
+          <FloatingBookButton />
+          <SiteFooter setting={setting} />
+        </LanguageProvider>
       </body>
     </html>
   );

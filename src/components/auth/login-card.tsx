@@ -7,6 +7,7 @@ import { LockKeyhole, Phone } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLanguage } from "@/context/language-context";
 
 type LoginCardProps = {
   mode: "admin" | "patient";
@@ -15,6 +16,7 @@ type LoginCardProps = {
 export function LoginCard({ mode }: LoginCardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t, language } = useLanguage();
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const isAdmin = mode === "admin";
@@ -43,7 +45,7 @@ export function LoginCard({ mode }: LoginCardProps) {
     setPending(false);
 
     if (!response.ok) {
-      setMessage(result.error ?? "Login failed");
+      setMessage(result.error ?? (language === "bn" ? "লগইন ব্যর্থ হয়েছে" : "Login failed"));
       return;
     }
 
@@ -60,11 +62,11 @@ export function LoginCard({ mode }: LoginCardProps) {
         <span className="grid size-12 place-items-center rounded-full bg-band text-ink border border-line">
           {isAdmin ? <LockKeyhole className="h-5 w-5 text-blue" /> : <Phone className="h-5 w-5 text-blue" />}
         </span>
-        <h2 className="mt-4 text-2xl font-extrabold text-ink">{isAdmin ? "Admin Sign In" : "Patient Sign In"}</h2>
+        <h2 className="mt-4 text-2xl font-extrabold text-ink">
+          {isAdmin ? t("auth.adminSignInTitle") : t("auth.patientSignInTitle")}
+        </h2>
         <p className="mt-1 text-xs leading-relaxed text-muted">
-          {isAdmin
-            ? "Enter your secure admin username and PIN."
-            : "Enter your full name and mobile number to access your portal."}
+          {isAdmin ? t("auth.adminSignInDesc") : t("auth.patientSignInDesc")}
         </p>
       </div>
 
@@ -72,7 +74,7 @@ export function LoginCard({ mode }: LoginCardProps) {
         {isAdmin ? (
           <>
             <label className="grid gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#3c3c3c]">
-              Username
+              {t("auth.username")}
               <Input
                 name="username"
                 placeholder="admin"
@@ -82,7 +84,7 @@ export function LoginCard({ mode }: LoginCardProps) {
               />
             </label>
             <label className="grid gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#3c3c3c]">
-              PIN
+              {t("auth.pin")}
               <Input
                 name="pin"
                 type="password"
@@ -96,20 +98,20 @@ export function LoginCard({ mode }: LoginCardProps) {
         ) : (
           <>
             <label className="grid gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#3c3c3c]">
-              Full Name <span className="text-red-500">*</span>
+              {t("booking.patientName")} <span className="text-red-500">*</span>
               <Input
                 name="fullName"
-                placeholder="Your full name"
+                placeholder={t("booking.patientNamePlaceholder")}
                 autoComplete="name"
                 required
                 className="h-11 rounded-xl border border-line bg-panel text-sm text-ink focus:bg-white focus:ring-2 focus:ring-blue"
               />
             </label>
             <label className="grid gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#3c3c3c]">
-              Mobile Number <span className="text-red-500">*</span>
+              {t("booking.mobileNumber")} <span className="text-red-500">*</span>
               <Input
                 name="mobileNumber"
-                placeholder="01XXXXXXXXX"
+                placeholder={t("booking.mobilePlaceholder")}
                 autoComplete="tel"
                 required
                 className="h-11 rounded-xl border border-line bg-panel text-sm text-ink focus:bg-white focus:ring-2 focus:ring-blue"
@@ -123,9 +125,13 @@ export function LoginCard({ mode }: LoginCardProps) {
           variant="gold"
           size="lg"
           disabled={pending}
-          className="w-full mt-2 rounded-full py-4 text-sm font-bold gap-2.5"
+          className="w-full mt-2 rounded-full py-4 text-sm font-bold gap-2.5 cursor-pointer"
         >
-          {pending ? "Signing in..." : isAdmin ? "Access Admin Panel" : "Login to Patient Portal"}
+          {pending
+            ? t("auth.signingIn")
+            : isAdmin
+            ? t("auth.loginButtonAdmin")
+            : t("auth.loginButtonPatient")}
           <span className="grid size-6 place-items-center rounded-full bg-ink text-white">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
               <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />

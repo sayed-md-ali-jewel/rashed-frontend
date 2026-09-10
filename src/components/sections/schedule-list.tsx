@@ -1,17 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, Clock3, MapPinned, Share2, Wallet } from "lucide-react";
+import { CalendarClock, MapPinned } from "lucide-react";
 import type { Schedule, WebsiteSetting } from "@/lib/types";
-import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 import { generateSlots, isUpcomingSchedule } from "@/lib/booking";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { useLanguage } from "@/context/language-context";
+import { formatLocalizedTime } from "@/lib/i18n/translations";
 
-export function ScheduleList({ schedules, content }: { schedules: Schedule[]; content: WebsiteSetting["content"] }) {
+export function ScheduleList({
+  schedules,
+  content
+}: {
+  schedules: Schedule[];
+  content: WebsiteSetting["content"];
+}) {
+  const { t, translate, formatCurrency, language } = useLanguage();
   const upcomingSchedules = schedules.filter(isUpcomingSchedule);
   const displaySchedules = upcomingSchedules.length > 0 ? upcomingSchedules : schedules;
+
+  const badgeText = content?.scheduleBadge ? translate(content.scheduleBadge) : t("schedule.badge");
+  const titleText = content?.scheduleTitle ? translate(content.scheduleTitle) : t("schedule.title");
+  const descText = content?.scheduleDescription ? translate(content.scheduleDescription) : t("schedule.description");
 
   return (
     <section id="schedules" className="py-16 bg-white border-b border-line">
@@ -20,13 +33,13 @@ export function ScheduleList({ schedules, content }: { schedules: Schedule[]; co
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1 text-xs font-semibold text-ink">
               <span className="grid size-3.5 place-items-center rounded-full bg-blue text-[8px] text-white">✓</span>
-              {content?.scheduleBadge || "Available Sessions"}
+              {badgeText}
             </div>
             <h2 className="mt-3 text-3xl font-extrabold leading-tight text-ink sm:text-4xl lg:text-[38px]">
-              {content?.scheduleTitle || "Consultation Schedules"}
+              {titleText}
             </h2>
             <p className="mt-3 max-w-2xl text-[16px] leading-relaxed text-muted">
-              {content?.scheduleDescription || "View upcoming chamber timings, locations, and book your verified serial slot directly."}
+              {descText}
             </p>
           </div>
         </div>
@@ -34,9 +47,11 @@ export function ScheduleList({ schedules, content }: { schedules: Schedule[]; co
         {displaySchedules.length === 0 ? (
           <Card className="mt-10 p-12 text-center rounded-2xl border border-line bg-panel">
             <CalendarClock className="mx-auto h-12 w-12 text-muted" />
-            <h3 className="mt-4 text-xl font-bold text-ink">{content?.scheduleEmptyTitle || "No active schedules"}</h3>
+            <h3 className="mt-4 text-xl font-bold text-ink">
+              {content?.scheduleEmptyTitle ? translate(content.scheduleEmptyTitle) : t("schedule.emptyTitle")}
+            </h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-              {content?.scheduleEmptyDescription || "Check back soon for new consultation chamber timings."}
+              {content?.scheduleEmptyDescription ? translate(content.scheduleEmptyDescription) : t("schedule.emptyDescription")}
             </p>
           </Card>
         ) : null}
@@ -45,9 +60,9 @@ export function ScheduleList({ schedules, content }: { schedules: Schedule[]; co
           {displaySchedules.map((schedule) => {
             const slots = generateSlots(schedule);
             const available = slots.filter((slot) => slot.available).length;
-            const displayTitle = schedule.title || schedule.hospital?.name || "Consultation Schedule";
-            const hospitalName = schedule.hospital?.name;
-            const hospitalAddress = schedule.hospital?.address || "Address details at clinic";
+            const displayTitle = translate(schedule.title || schedule.hospital?.name) || "Consultation Schedule";
+            const hospitalName = schedule.hospital?.name ? translate(schedule.hospital.name) : undefined;
+            const hospitalAddress = translate(schedule.hospital?.address) || "Address details at clinic";
 
             return (
               <div
@@ -57,10 +72,14 @@ export function ScheduleList({ schedules, content }: { schedules: Schedule[]; co
                 <div className="p-6">
                   <div className="flex items-center justify-between gap-4">
                     <Badge variant={available > 0 ? "success" : "warning"}>
-                      {slots.length === 0 ? "Open for Visit" : available > 0 ? `${available} Slots Available` : "Session Full"}
+                      {slots.length === 0
+                        ? t("schedule.openForVisit")
+                        : available > 0
+                        ? t("schedule.slotsAvailable", { count: available })
+                        : t("schedule.sessionFull")}
                     </Badge>
                     <span className="text-xs font-semibold text-blue">
-                      {schedule.slotDurationMinutes || 10}m intervals
+                      {t("schedule.slotInterval", { mins: schedule.slotDurationMinutes || 10 })}
                     </span>
                   </div>
 
@@ -76,11 +95,13 @@ export function ScheduleList({ schedules, content }: { schedules: Schedule[]; co
 
                   <div className="mt-5 grid grid-cols-2 gap-2.5">
                     <div className="rounded-xl border border-line bg-panel p-3">
-                      <span className="block text-[11px] font-semibold text-muted">Session Date</span>
-                      <span className="mt-1 block text-sm font-bold text-ink">{formatDateTime(schedule.startsAt)}</span>
+                      <span className="block text-[11px] font-semibold text-muted">{t("schedule.sessionDate")}</span>
+                      <span className="mt-1 block text-sm font-bold text-ink">
+                        {formatLocalizedTime(formatDateTime(schedule.startsAt), language)}
+                      </span>
                     </div>
                     <div className="rounded-xl border border-line bg-panel p-3">
-                      <span className="block text-[11px] font-semibold text-muted">Consultation Fee</span>
+                      <span className="block text-[11px] font-semibold text-muted">{t("schedule.consultationFee")}</span>
                       <span className="mt-1 block text-sm font-bold text-ink">{formatCurrency(schedule.fee)}</span>
                     </div>
                   </div>
@@ -97,11 +118,13 @@ export function ScheduleList({ schedules, content }: { schedules: Schedule[]; co
 
                 <div className="flex items-center justify-between border-t border-line bg-cream p-5">
                   <span className="text-xs font-medium text-muted">
-                    {slots.length > 0 ? `${available} of ${slots.length} available` : "Open queue"}
+                    {slots.length > 0
+                      ? t("schedule.availableOfTotal", { available, total: slots.length })
+                      : t("schedule.openQueue")}
                   </span>
                   <Link href={`/schedules/${schedule.slug}`}>
                     <Button variant="gold" size="sm" className="gap-2">
-                      {content?.scheduleBookButton || "Select Slot"}
+                      {content?.scheduleBookButton ? translate(content.scheduleBookButton) : t("schedule.selectSlot")}
                       <span className="grid size-5 place-items-center rounded-full bg-ink">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
                           <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />

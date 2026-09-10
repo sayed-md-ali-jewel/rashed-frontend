@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Check, X, AlertTriangle, Info, HelpCircle } from "lucide-react";
+import { useLanguage } from "@/context/language-context";
 
 export type SweetAlertType = "success" | "error" | "warning" | "info" | "question";
 
@@ -25,6 +26,7 @@ export function SweetAlertModal({
   config: SweetAlertConfig;
   onClose: () => void;
 }) {
+  const { t, translate } = useLanguage();
   const [progress, setProgress] = useState(100);
 
   useEffect(() => {
@@ -68,6 +70,9 @@ export function SweetAlertModal({
     }
     onClose();
   };
+
+  const cancelLabel = config.cancelButtonText ? translate(config.cancelButtonText) : t("portal.cancel", {}, "Cancel");
+  const confirmLabel = config.confirmButtonText ? translate(config.confirmButtonText) : "OK";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
@@ -117,13 +122,13 @@ export function SweetAlertModal({
 
         {/* Title */}
         <h3 className="text-xl font-black text-slate-900 tracking-tight">
-          {config.title}
+          {translate(config.title)}
         </h3>
 
         {/* Description */}
         {config.text && (
           <p className="mt-2 text-sm text-slate-500 leading-relaxed font-medium">
-            {config.text}
+            {translate(config.text)}
           </p>
         )}
 
@@ -133,22 +138,22 @@ export function SweetAlertModal({
             <button
               type="button"
               onClick={handleCancel}
-              className="h-11 px-5 rounded-2xl border border-slate-200 bg-slate-100 text-xs font-bold text-slate-700 hover:bg-slate-200 hover:text-slate-900 transition-all active:scale-95"
+              className="h-11 px-5 rounded-2xl border border-slate-200 bg-slate-100 text-xs font-bold text-slate-700 hover:bg-slate-200 hover:text-slate-900 transition-all active:scale-95 cursor-pointer"
             >
-              {config.cancelButtonText || "Cancel"}
+              {cancelLabel}
             </button>
           )}
 
           <button
             type="button"
             onClick={handleConfirm}
-            className={`h-11 px-6 rounded-2xl text-xs font-black text-white shadow-md transition-all hover:scale-[1.02] active:scale-95 ${
+            className={`h-11 px-6 rounded-2xl text-xs font-black text-white shadow-md transition-all hover:scale-[1.02] active:scale-95 cursor-pointer ${
               type === "error" || type === "warning"
                 ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20"
                 : "bg-teal-600 hover:bg-teal-700 shadow-teal-600/20"
             }`}
           >
-            {config.confirmButtonText || "OK"}
+            {confirmLabel}
           </button>
         </div>
 

@@ -4,29 +4,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Facebook,
-  HeartPulse,
   Linkedin,
   Mail,
   MapPin,
   Phone,
   Send,
   Twitter,
-  Youtube,
 } from "lucide-react";
 import type { WebsiteSetting } from "@/lib/types";
 import { safeImageSrc } from "@/lib/utils";
+import { useLanguage } from "@/context/language-context";
 
-const links = [
-  { label: "Home", href: "/" },
-  { label: "Consultation Schedules", href: "/#schedules" },
-  { label: "About Doctor", href: "/#profile" },
-  { label: "Medical Services", href: "/#services" },
-  { label: "Patient Reviews", href: "/#reviews" },
-  { label: "Chamber Gallery", href: "/#gallery" },
+const navLinksConfig = [
+  { key: "footer.home", href: "/" },
+  { key: "footer.schedules", href: "/#schedules" },
+  { key: "footer.about", href: "/#profile" },
+  { key: "footer.services", href: "/#services" },
+  { key: "footer.reviews", href: "/#reviews" },
+  { key: "footer.gallery", href: "/#gallery" },
 ] as const;
 
 export function SiteFooter({ setting }: { setting: WebsiteSetting }) {
   const pathname = usePathname();
+  const { t, translate, formatNumber } = useLanguage();
 
   const socials = [
     { label: "Facebook", icon: Facebook, href: setting.facebookUrl },
@@ -39,6 +39,11 @@ export function SiteFooter({ setting }: { setting: WebsiteSetting }) {
     return null;
   }
 
+  const siteTitle = translate(setting.siteName || "Dr. Rashed");
+  const footerDesc =
+    translate(setting.footerDescription) ||
+    "Dedicated clinical healthcare and patient-first medical practice with modern scheduling and seamless serial appointment management.";
+
   return (
     <footer className="bg-black pt-16 pb-12 text-white">
       <div className="mx-auto max-w-[1340px] px-6">
@@ -48,24 +53,23 @@ export function SiteFooter({ setting }: { setting: WebsiteSetting }) {
               {setting.logoDark || setting.logo ? (
                 <img
                   src={safeImageSrc(setting.logoDark || setting.logo)}
-                  alt={setting.siteName || "Dr. Rashed"}
+                  alt={siteTitle}
                   className="h-10 w-auto max-w-[190px] object-contain brightness-105"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                   }}
                 />
               ) : (
-
                 <>
                   <span className="grid size-11 place-items-center rounded-xl bg-blue text-white font-black text-xl shadow-sm">
                     R
                   </span>
                   <div>
                     <span className="block text-xl font-black tracking-tight text-white">
-                      {setting.siteName || "Dr. Rashed"}
+                      {siteTitle}
                     </span>
                     <span className="block text-xs text-[#bdbdbd]">
-                      Consultant & Specialist
+                      {t("footer.consultantSpecialist")}
                     </span>
                   </div>
                 </>
@@ -73,8 +77,7 @@ export function SiteFooter({ setting }: { setting: WebsiteSetting }) {
             </div>
 
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-[#bdbdbd]">
-              {setting.footerDescription ||
-                "Dedicated clinical healthcare and patient-first medical practice with modern scheduling and seamless serial appointment management."}
+              {footerDesc}
             </p>
 
             <div className="mt-6 flex gap-3">
@@ -98,16 +101,16 @@ export function SiteFooter({ setting }: { setting: WebsiteSetting }) {
 
           <div>
             <h4 className="mb-4 text-base font-bold text-white">
-              Quick Navigation
+              {t("footer.quickNav")}
             </h4>
             <ul className="space-y-2.5 text-[15px] text-[#bdbdbd]">
-              {links.map((link) => (
+              {navLinksConfig.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
                     className="transition hover:text-white"
                   >
-                    {link.label}
+                    {t(link.key)}
                   </Link>
                 </li>
               ))}
@@ -116,7 +119,7 @@ export function SiteFooter({ setting }: { setting: WebsiteSetting }) {
 
           <div>
             <h4 className="mb-4 text-base font-bold text-white">
-              Contact & Chambers
+              {t("footer.contactChambers")}
             </h4>
             <div className="space-y-3 text-sm text-[#bdbdbd]">
               {setting.contactPhone ? (
@@ -134,7 +137,7 @@ export function SiteFooter({ setting }: { setting: WebsiteSetting }) {
               {setting.contactAddress ? (
                 <p className="flex items-start gap-3">
                   <MapPin className="h-4 w-4 text-blue shrink-0 mt-0.5" />
-                  <span>{setting.contactAddress}</span>
+                  <span>{translate(setting.contactAddress)}</span>
                 </p>
               ) : null}
             </div>
@@ -144,7 +147,7 @@ export function SiteFooter({ setting }: { setting: WebsiteSetting }) {
                 href="/appointments"
                 className="inline-flex items-center gap-2.5 rounded-full bg-gold px-6 py-3 text-xs font-semibold text-ink transition hover:bg-gold-dark"
               >
-                Book Appointment Online
+                {t("footer.bookOnline")}
                 <span className="grid size-5 place-items-center rounded-full bg-ink text-white">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
                     <path
@@ -163,10 +166,12 @@ export function SiteFooter({ setting }: { setting: WebsiteSetting }) {
 
         <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-[#242424] pt-6 text-xs text-[#bdbdbd]">
           <span>
-            © {new Date().getFullYear()} {setting.siteName}. All rights
-            reserved.
+            {t("footer.rightsReserved", {
+              year: formatNumber(new Date().getFullYear()),
+              siteName: siteTitle
+            })}
           </span>
-          <span>Designed with modern medical standards.</span>
+          <span>{t("footer.designedWith")}</span>
         </div>
       </div>
     </footer>
