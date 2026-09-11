@@ -77,7 +77,7 @@ export function PatientPortalView({
   payments: PatientPayment[];
 }) {
   const { t, translate, formatCurrency, formatNumber, language } = useLanguage();
-  const { openChatWithDoctor, enablePatientChat } = useChat();
+  const { openChatWithDoctor, enablePatientChat, setPatientSession } = useChat();
   const [patient, setPatient] = useState<PatientSession>(initialPatient);
   const [activeTab, setActiveTab] = useState<"appointments" | "records" | "payments">("appointments");
 
@@ -121,6 +121,10 @@ export function PatientPortalView({
           fullName: newName,
           mobileNumber: newMobile,
           address: newAddress
+        });
+        setPatientSession({
+          fullName: newName,
+          mobileNumber: newMobile
         });
         setPhoneSuccess(t("portal.profileUpdated"));
         setTimeout(() => {

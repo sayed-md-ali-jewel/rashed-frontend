@@ -36,12 +36,14 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
   const {
     isPatientLoggedIn,
     userName,
+    userPhone,
     activeConversation,
     openChatWithDoctor,
     enablePatientChat
   } = useChat();
 
-  const patientDisplayName = userName || activeConversation?.patientName;
+  const isEffectivePatientLoggedIn = Boolean(isPatientLoggedIn && userPhone && !pathname.startsWith("/patient/login"));
+  const patientDisplayName = isEffectivePatientLoggedIn ? (userName || activeConversation?.patientName) : undefined;
 
   // Close menu when pathname changes
   useEffect(() => {
@@ -115,28 +117,27 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
             ))}
           </ul>
 
-          {/* Desktop Right Actions: Language Toggle + Patient / Chat / Appointments CTA Buttons */}
+          {/* Desktop Right Actions: Language Toggle + Patient Actions + Book Appointment */}
           <div className="hidden shrink-0 items-center gap-2.5 xl:gap-3 lg:flex">
             <LanguageToggle variant="desktop" />
 
-            {isPatientLoggedIn ? (
+            {/* When Logged In: Show Patient Name + Chat with Doctor */}
+            {isEffectivePatientLoggedIn ? (
               <>
-                {/* Patient's Name Display */}
                 <Link href="/patient" className="shrink-0" title={patientDisplayName || "Patient Portal"}>
                   <button className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-bold xl:text-sm xl:px-4 border border-teal-600/30 bg-teal-50/90 text-teal-950 transition hover:bg-teal-100 hover:border-teal-600/50 cursor-pointer shadow-xs">
-                    <span className="grid size-5.5 place-items-center rounded-full bg-teal-700 text-[10px] font-bold text-white shrink-0">
-                      {patientDisplayName ? patientDisplayName.charAt(0).toUpperCase() : <UserRound className="size-3" />}
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-teal-700 to-emerald-500 font-bold text-xs text-white shadow-xs leading-none">
+                      {patientDisplayName ? patientDisplayName.trim().charAt(0).toUpperCase() : <UserRound className="size-3.5 text-white" />}
                     </span>
-                    <span className="max-w-[120px] xl:max-w-[160px] truncate">{patientDisplayName || t("nav.patientPortal")}</span>
+                    <span className="max-w-[120px] xl:max-w-[160px] truncate capitalize">{patientDisplayName || t("nav.patientPortal")}</span>
                   </button>
                 </Link>
 
-                {/* Chat with Doctor Button (when chat enabled) */}
                 {enablePatientChat !== false && (
                   <button
                     type="button"
                     onClick={openChatWithDoctor}
-                    className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-bold xl:text-sm xl:px-4 bg-[#25D366] hover:bg-[#20bd5a] text-white transition hover:scale-105 active:scale-95 shadow-sm cursor-pointer"
+                    className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2.5 text-xs font-bold xl:text-sm xl:px-4 bg-[#25D366] hover:bg-[#20bd5a] text-white transition hover:scale-105 active:scale-95 shadow-sm cursor-pointer"
                     title={t("chat.withDoctor")}
                   >
                     <MessageSquare className="h-4 w-4 shrink-0 fill-white" />
@@ -145,6 +146,7 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
                 )}
               </>
             ) : (
+              /* When Logged Out: Show ONLY Patient Portal (No user name, No Chat with Doctor) */
               <Link href="/patient" className="shrink-0">
                 <button className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2.5 text-xs font-semibold xl:text-sm xl:px-4.5 border-[1.5px] border-ink text-ink transition hover:bg-ink hover:text-white cursor-pointer">
                   <UserRound className="h-4 w-4 shrink-0" />
@@ -153,6 +155,7 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
               </Link>
             )}
 
+            {/* Book Appointment CTA */}
             <Link href="/appointments" className="shrink-0">
               <button className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2.5 text-xs font-semibold xl:text-sm xl:px-4.5 bg-ink text-white transition hover:bg-ink/85 cursor-pointer">
                 <CalendarDays className="h-4 w-4 shrink-0" />
@@ -214,7 +217,8 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
               </nav>
 
               <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-100">
-                {isPatientLoggedIn ? (
+                {/* When Logged In: Show Patient Name + Chat with Doctor */}
+                {isEffectivePatientLoggedIn ? (
                   <>
                     <Link
                       href="/patient"
@@ -222,10 +226,10 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
                       className="w-full"
                     >
                       <button className="w-full h-12 flex items-center justify-center gap-2.5 rounded-2xl border border-teal-600/30 bg-teal-50 font-bold text-sm text-teal-950 hover:bg-teal-100 transition-all cursor-pointer">
-                        <span className="grid size-6 place-items-center rounded-full bg-teal-700 text-xs font-bold text-white shrink-0">
-                          {patientDisplayName ? patientDisplayName.charAt(0).toUpperCase() : <UserRound className="size-3.5" />}
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-teal-700 to-emerald-500 font-bold text-xs text-white shadow-xs leading-none">
+                          {patientDisplayName ? patientDisplayName.trim().charAt(0).toUpperCase() : <UserRound className="size-3.5 text-white" />}
                         </span>
-                        <span className="truncate">{patientDisplayName || t("nav.patientPortal")}</span>
+                        <span className="truncate capitalize">{patientDisplayName || t("nav.patientPortal")}</span>
                       </button>
                     </Link>
 
@@ -244,6 +248,7 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
                     )}
                   </>
                 ) : (
+                  /* When Logged Out: Show ONLY Patient Portal (No user name, No Chat with Doctor) */
                   <Link
                     href="/patient"
                     onClick={() => setOpen(false)}
@@ -256,6 +261,7 @@ export function SiteHeader({ setting }: { setting: WebsiteSetting }) {
                   </Link>
                 )}
 
+                {/* Book Appointment (Mobile) */}
                 <Link
                   href="/appointments"
                   onClick={() => setOpen(false)}

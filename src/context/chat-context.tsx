@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import type { Route } from "next";
 import { io, Socket } from "socket.io-client";
 
 export type ConversationStatus = "pending" | "active" | "closed" | "blocked" | "rejected";
@@ -53,6 +55,9 @@ type ChatContextType = {
   isPatientLoggedIn: boolean;
   userPhone?: string;
   userName?: string;
+  setPatientSession: (session: { fullName?: string; mobileNumber?: string } | null) => void;
+  logoutPatient: () => Promise<void>;
+  checkPatientAuth: () => Promise<boolean>;
   activeConversation: Conversation | null;
   setActiveConversation: (conv: Conversation | null) => void;
   messages: ChatMessage[];
@@ -89,6 +94,8 @@ export function ChatProvider({
   userName?: string;
   initialEnablePatientChat?: boolean;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -112,9 +119,81 @@ export function ChatProvider({
 
   // Sync prop changes to internal state
   useEffect(() => {
-    if (userPhone) setCurrentUserPhone(userPhone);
-    if (userName) setCurrentUserName(userName);
+    setCurrentUserPhone(userPhone);
+    setCurrentUserName(userName);
   }, [userPhone, userName]);
+
+  // Check auth status against the server cookie on mount/route transition
+  const checkPatientAuth = useCallback(async (): Promise<boolean> => {
+    if (userRole !== "patient") return true;
+    try {
+      const res = await fetch("/api/auth/patient/me");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.authenticated && data.user?.mobileNumber) {
+          setCurrentUserPhone(data.user.mobileNumber);
+          setCurrentUserName(data.user.fullName);
+          return true;
+        }
+      }
+      // If unauthenticated or cookie missing, clean up patient state
+      setCurrentUserPhone(undefined);
+      setCurrentUserName(undefined);
+      setActiveConversation(null);
+      setMessages([]);
+      setConversationsList([]);
+      setIsOpen(false);
+      return false;
+    } catch {
+      return false;
+    }
+  }, [userRole]);
+
+  useEffect(() => {
+    if (userRole === "patient") {
+      checkPatientAuth();
+    }
+  }, [userRole, pathname, checkPatientAuth]);
+
+  // Set or clear patient session dynamically (e.g. login, logout, profile update)
+  const setPatientSession = useCallback(
+    (session: { fullName?: string; mobileNumber?: string } | null) => {
+      if (session && (session.mobileNumber || session.fullName)) {
+        const phone = session.mobileNumber?.trim();
+        const name = session.fullName?.trim();
+        setCurrentUserPhone(phone);
+        setCurrentUserName(name);
+        if (socket && phone) {
+          socket.emit("user:join", {
+            role: "patient",
+            phone,
+            name
+          });
+        }
+      } else {
+        // Patient Logged Out
+        setCurrentUserPhone(undefined);
+        setCurrentUserName(undefined);
+        setActiveConversation(null);
+        setMessages([]);
+        setConversationsList([]);
+        setIsOpen(false);
+        if (socket && activeConvIdRef.current) {
+          socket.emit("conversation:leave", activeConvIdRef.current);
+        }
+      }
+    },
+    [socket]
+  );
+
+  const logoutPatient = useCallback(async () => {
+    try {
+      await fetch("/api/auth/patient/logout", { method: "POST" });
+    } catch {}
+    setPatientSession(null);
+    router.push("/patient/login" as Route);
+    router.refresh();
+  }, [setPatientSession, router]);
 
   // Initialize Socket.IO connection
   useEffect(() => {
@@ -343,22 +422,27 @@ export function ChatProvider({
       try {
         const url = status ? `/api/chat/conversations?status=${status}` : "/api/chat/conversations";
         const res = await fetch(url);
+        if (!res.ok) {
+          if (res.status === 401 && userRole === "patient") {
+            // Patient is not logged in / session expired
+            setCurrentUserPhone(undefined);
+            setCurrentUserName(undefined);
+            setActiveConversation(null);
+            setConversationsList([]);
+          }
+          return;
+        }
+
         const data = await res.json();
         if (data.conversations) {
           setConversationsList(data.conversations);
           if (data.stats) {
             setPendingRequestsCount(data.stats.pending || 0);
           }
-          // For patient: automatically activate their conversation and fetch messages
-          if (userRole === "patient" && data.conversations.length > 0) {
+          // For patient: only activate conversation if currentUserPhone is set
+          if (userRole === "patient" && currentUserPhone && data.conversations.length > 0) {
             const latest = data.conversations[0];
             setActiveConversation((prev) => prev || latest);
-            if (latest.patientPhone) {
-              setCurrentUserPhone((prev) => prev || latest.patientPhone);
-            }
-            if (latest.patientName) {
-              setCurrentUserName((prev) => prev || latest.patientName);
-            }
             if (!activeConvIdRef.current) {
               fetchMessages(latest._id);
             }
@@ -368,7 +452,7 @@ export function ChatProvider({
         console.error("Failed to load conversations:", e);
       }
     },
-    [userRole, fetchMessages]
+    [userRole, currentUserPhone, fetchMessages]
   );
 
   // Background sync fallback when chat window is open
@@ -589,9 +673,12 @@ export function ChatProvider({
         openChatWithDoctor,
         enablePatientChat,
         setEnablePatientChat,
-        isPatientLoggedIn: Boolean(currentUserPhone || activeConversation?.patientPhone),
+        isPatientLoggedIn: Boolean(currentUserPhone),
         userPhone: currentUserPhone,
         userName: currentUserName,
+        setPatientSession,
+        logoutPatient,
+        checkPatientAuth,
         activeConversation,
         setActiveConversation,
         messages,

@@ -2,12 +2,13 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LockKeyhole, Phone } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/context/language-context";
+import { useChat } from "@/context/chat-context";
 
 type LoginCardProps = {
   mode: "admin" | "patient";
@@ -17,9 +18,23 @@ export function LoginCard({ mode }: LoginCardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t, language } = useLanguage();
+  const { setPatientSession } = useChat();
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const isAdmin = mode === "admin";
+
+  // Ensure state is cleanly logged-out when on login card without a valid session
+  useEffect(() => {
+    if (mode === "patient") {
+      fetch("/api/chat/conversations")
+        .then((res) => {
+          if (res.status === 401) {
+            setPatientSession(null);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [mode, setPatientSession]);
 
   async function onSubmit(formData: FormData) {
     setPending(true);
@@ -47,6 +62,13 @@ export function LoginCard({ mode }: LoginCardProps) {
     if (!response.ok) {
       setMessage(result.error ?? (language === "bn" ? "লগইন ব্যর্থ হয়েছে" : "Login failed"));
       return;
+    }
+
+    if (!isAdmin && payload.mobileNumber) {
+      setPatientSession({
+        fullName: String(payload.fullName || ""),
+        mobileNumber: String(payload.mobileNumber || "")
+      });
     }
 
     const requestedNext = searchParams.get("next");

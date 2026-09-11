@@ -153,37 +153,21 @@ export function PatientChatWidget({ doctor }: { doctor?: { name?: string; image?
     }
   };
 
-  if (pathname.startsWith("/admin") || enablePatientChat === false || !isPatientLoggedIn) {
+  if (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/patient/login") ||
+    enablePatientChat === false ||
+    !isPatientLoggedIn ||
+    !isOpen
+  ) {
     return null;
   }
 
   return (
     <>
-      {/* Floating Chat Launcher Button (WhatsApp style with pulse) */}
-      {!isOpen && (
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white px-5 py-3.5 shadow-2xl shadow-emerald-600/40 transition-all duration-300 hover:scale-105 active:scale-95 group"
-          aria-label="Chat with Doctor"
-        >
-          <span className="relative flex size-6 items-center justify-center">
-            <MessageSquare className="size-6 fill-white" />
-            <span className="absolute -top-1 -right-1 flex size-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-              <span className="relative inline-flex rounded-full size-2.5 bg-white"></span>
-            </span>
-          </span>
-          <span className="font-bold text-sm tracking-wide">
-            {language === "bn" ? "ডাক্তারের সাথে চ্যাট" : "Chat with Doctor"}
-          </span>
-        </button>
-      )}
-
       {/* WhatsApp-Style Chat Window Modal/Drawer */}
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-end sm:p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative flex flex-col w-full sm:w-[420px] h-[92vh] sm:h-[620px] max-h-[100vh] bg-[#efeae2] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden border border-slate-300/80 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-end sm:p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="relative flex flex-col w-full sm:w-[420px] h-[92vh] sm:h-[620px] max-h-[100vh] bg-[#efeae2] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden border border-slate-300/80 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
             {/* 1. WhatsApp Header */}
             <div className="flex items-center justify-between px-4 py-3 bg-[#075E54] text-white shadow-md z-10 shrink-0">
               <div className="flex items-center gap-3">
@@ -483,7 +467,6 @@ export function PatientChatWidget({ doctor }: { doctor?: { name?: string; image?
             )}
           </div>
         </div>
-      )}
     </>
   );
 }

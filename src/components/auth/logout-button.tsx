@@ -5,16 +5,22 @@ import type { Route } from "next";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/context/language-context";
+import { useChat } from "@/context/chat-context";
 
 export function LogoutButton({ mode }: { mode: "admin" | "patient" }) {
   const router = useRouter();
   const { t } = useLanguage();
+  const { logoutPatient } = useChat();
 
   async function logout() {
-    await fetch(mode === "admin" ? "/api/auth/admin/logout" : "/api/auth/patient/logout", {
+    if (mode === "patient") {
+      await logoutPatient();
+      return;
+    }
+    await fetch("/api/auth/admin/logout", {
       method: "POST"
     });
-    router.push((mode === "admin" ? "/admin/login" : "/patient/login") as Route);
+    router.push("/admin/login" as Route);
     router.refresh();
   }
 
