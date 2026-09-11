@@ -2,6 +2,12 @@ name: Build and Deploy to Webuzo
 
 on:
   workflow_dispatch:
+    inputs:
+      clean_slate:
+        description: 'Wipe remote state and perform full clean sync'
+        required: false
+        default: false
+        type: boolean
   push:
     branches:
       - main
@@ -22,8 +28,6 @@ jobs:
       FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || secrets.FTP_PROTOCOL || 'ftp' }}
       FTP_PORT: ${{ vars.FTP_PORT || secrets.FTP_PORT || '21' }}
       FTP_SERVER_DIR: ${{ vars.FTP_SERVER_DIR || vars.SERVER_DIR || secrets.FTP_SERVER_DIR || secrets.SERVER_DIR || './' }}
-      # Toggle this input to true ONCE to recover from a corrupted remote state file,
-      # then set it back to false. workflow_dispatch lets you flip it per-run without editing the file.
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
     steps:
@@ -128,14 +132,12 @@ jobs:
           port: ${{ env.FTP_PORT }}
           local-dir: ./deploy/
           server-dir: ${{ env.NORMALIZED_SERVER_DIR }}
-          # Pin the state file to a known, predictable path so it's easy to find/delete
-          # manually via FTP if the sync ever desyncs again (the root cause of this 550).
-          state-name: .ftp-deploy-sync-state.json
-          # Flip to true for exactly one run if you hit a 550/desync error again,
-          # then set back to false. Wipes and rebuilds server-dir + the state file.
-          dangerous-clean-slate: ${{ github.event.inputs.clean_slate == 'true' }}
+          # Use a clean v2 state file to avoid trying to delete legacy /_next directories
+          state-name: .ftp-deploy-sync-state-v2.json
+          dangerous-clean-slate: ${{ github.event.inputs.clean_slate == 'true' || github.event.inputs.clean_slate == true }}
           log-level: verbose
           exclude: |
             **/.git*
             **/.git*/**
             public/uploads/**
+            .ftp-deploy-sync-state.json
