@@ -166,6 +166,7 @@ function mapDoctor(item: MongoDocument | null, serviceItems: MongoDocument[] = [
     experience: Array.isArray(doc.experience) ? asStringArray(doc.experience, doctor.experience ?? []) : (doctor.experience ?? []),
     awards: Array.isArray(doc.awards) ? asStringArray(doc.awards, doctor.awards ?? []) : (doctor.awards ?? []),
     services: Array.isArray(doc.services) ? asStringArray(doc.services, doctor.services ?? []) : (doctor.services ?? []),
+    enablePatientChat: typeof doc.enablePatientChat === "boolean" ? doc.enablePatientChat : (doctor.enablePatientChat ?? true),
     seo: mapSeo(doc.seo, doctor.seo)
   };
 }
@@ -292,6 +293,7 @@ function mapWebsiteSetting(item: MongoDocument | null): WebsiteSetting {
     disallowedPaths: Array.isArray(item.disallowedPaths)
       ? asStringArray(item.disallowedPaths, ["/admin", "/api"])
       : (websiteSetting.disallowedPaths || ["/admin", "/api"]),
+    enablePatientChat: typeof item.enablePatientChat === "boolean" ? item.enablePatientChat : true,
     defaultSeo: mapSeo(
       item.defaultSeo,
       websiteSetting.defaultSeo ?? {

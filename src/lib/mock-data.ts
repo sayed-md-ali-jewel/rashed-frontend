@@ -96,6 +96,7 @@ export const doctor: Doctor = {
   experience: ["15+ years clinical experience", "Former registrar at a tertiary hospital"],
   awards: ["Best Clinical Service Award 2022", "Community Health Excellence 2023"],
   services: ["General consultation", "Follow-up care", "Health screening", "Medical reports review"],
+  enablePatientChat: true,
   seo: {
     seoTitle: "Dr. Md. Rashedul Alam | Medicine Specialist in Dhaka",
     metaDescription:
@@ -280,6 +281,7 @@ export const websiteSetting: WebsiteSetting = {
   robotsTxtCustom: "",
   sitemapEnabled: true,
   disallowedPaths: ["/admin", "/api"],
+  enablePatientChat: true,
   defaultSeo: {
     seoTitle: "Doctor Portfolio & Appointment System",
     metaDescription: "Doctor portfolio, schedules, booking, clinic accounting, and SEO management."

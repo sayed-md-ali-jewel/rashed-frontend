@@ -9,6 +9,8 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { FloatingBookButton } from "@/components/layout/floating-book-button";
 import { ChunkErrorHandler } from "@/components/layout/chunk-error-handler";
 import { LanguageProvider } from "@/context/language-context";
+import { ChatProvider } from "@/context/chat-context";
+import { PatientChatWidget } from "@/components/chat/patient-chat-widget";
 import { getWebsiteSetting } from "@/lib/cms-data";
 import type { Language } from "@/lib/i18n/translations";
 
@@ -91,6 +93,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const cookieStore = await cookies();
   const savedLang = cookieStore.get("site_lang")?.value;
   const initialLang: Language = savedLang === "en" ? "en" : "bn";
+
+  let patientPhone: string | undefined;
+  let patientName: string | undefined;
+  const patientCookie = cookieStore.get("patient_session")?.value;
+  if (patientCookie) {
+    try {
+      const parsed = JSON.parse(Buffer.from(patientCookie, "base64url").toString("utf8"));
+      patientPhone = parsed.mobileNumber;
+      patientName = parsed.fullName;
+    } catch {}
+  }
 
   return (
     <html
@@ -230,11 +243,19 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             </>
           )}
 
-          <ChunkErrorHandler />
-          <SiteHeader setting={setting} />
-          <div className="min-h-screen">{children}</div>
-          <FloatingBookButton />
-          <SiteFooter setting={setting} />
+          <ChatProvider
+            userRole="patient"
+            userPhone={patientPhone}
+            userName={patientName}
+            initialEnablePatientChat={setting?.enablePatientChat ?? true}
+          >
+            <ChunkErrorHandler />
+            <SiteHeader setting={setting} />
+            <div className="min-h-screen">{children}</div>
+            <FloatingBookButton />
+            <PatientChatWidget />
+            <SiteFooter setting={setting} />
+          </ChatProvider>
         </LanguageProvider>
       </body>
     </html>

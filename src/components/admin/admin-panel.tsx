@@ -88,6 +88,7 @@ import {
   type SweetAlertConfig,
 } from "@/components/ui/sweet-alert";
 import { safeImageSrc } from "@/lib/utils";
+import { AdminMessagesPanel } from "@/components/admin/admin-messages-panel";
 
 function toLocalDatetimeInput(dateStr?: string | Date) {
   if (!dateStr) return "";
@@ -136,17 +137,20 @@ function formatSlotDateLong(dateStr?: string) {
   return `${day} ${month}, ${year}`;
 }
 
-function slugify(text: string) {
-  return (text || "")
+function slugify(text: string): string {
+  return text
+    .toString()
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/[^\w-]+/g, "")
+    .replace(/--+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 
 export type AdminTab =
   | "dashboard"
+  | "messages"
   | "appointments"
   | "hospitals"
   | "schedules"
@@ -1545,6 +1549,22 @@ export function AdminPanel() {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => {
+                  setActiveTab("messages");
+                  setMobileMenuOpen(false);
+                }}
+                className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
+                  activeTab === "messages"
+                    ? "bg-teal-500/15 text-teal-300 font-semibold border border-teal-500/30 shadow-inner"
+                    : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="h-4 w-4 text-teal-400" />
+                  <span>Messages & Requests</span>
+                </div>
+              </button>
             </div>
           </div>
 
@@ -2194,6 +2214,16 @@ export function AdminPanel() {
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* ================= MESSAGES & REQUESTS TAB ================= */}
+              {activeTab === "messages" && (
+                <AdminMessagesPanel
+                  onViewPatient={(phone) => {
+                    setActiveTab("patients");
+                    setPatientSearch(phone);
+                  }}
+                />
               )}
 
               {/* ================= 2. APPOINTMENTS MANAGER TAB ================= */}

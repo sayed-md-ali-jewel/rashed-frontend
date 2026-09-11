@@ -20,7 +20,7 @@ export function DoctorHero({
   doctor: Doctor;
   content: WebsiteSetting["content"];
 }) {
-  const { t, translate, formatNumber } = useLanguage();
+  const { t, translate, formatNumber, language } = useLanguage();
   const statIcons = [UsersRound, Medal, Heart, Clock3];
   const heroImage = safeImageSrc(doctor.image);
 

@@ -62,6 +62,7 @@ export type Doctor = {
   experience: string[];
   awards: string[];
   services: string[];
+  enablePatientChat?: boolean;
   seo: SEOFields;
 };
 
@@ -164,6 +165,7 @@ export type WebsiteSetting = {
   robotsTxtCustom?: string;
   sitemapEnabled?: boolean;
   disallowedPaths?: string[];
+  enablePatientChat?: boolean;
   defaultSeo?: SEOFields;
   content: {
     heroPrimaryCta: string;

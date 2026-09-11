@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
 import { formatDateTime } from "@/lib/utils";
 import { useLanguage } from "@/context/language-context";
+import { useChat } from "@/context/chat-context";
 import { formatLocalizedTime } from "@/lib/i18n/translations";
 
 export type PatientAppointment = {
@@ -76,6 +77,7 @@ export function PatientPortalView({
   payments: PatientPayment[];
 }) {
   const { t, translate, formatCurrency, formatNumber, language } = useLanguage();
+  const { openChatWithDoctor, enablePatientChat } = useChat();
   const [patient, setPatient] = useState<PatientSession>(initialPatient);
   const [activeTab, setActiveTab] = useState<"appointments" | "records" | "payments">("appointments");
 
@@ -229,8 +231,8 @@ export function PatientPortalView({
             </div>
           </div>
 
-          <div className="mt-6">
-            <Link href="/appointments">
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+            <Link href="/appointments" className="flex-1">
               <Button variant="gold" size="lg" className="w-full h-12 rounded-full font-bold gap-2 text-sm shadow-sm hover:shadow-md cursor-pointer">
                 {t("portal.browseSchedules")}
                 <span className="grid size-5 place-items-center rounded-full bg-ink text-white">
@@ -240,6 +242,17 @@ export function PatientPortalView({
                 </span>
               </Button>
             </Link>
+
+            {enablePatientChat !== false && (
+              <Button
+                type="button"
+                onClick={openChatWithDoctor}
+                className="h-12 px-6 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold gap-2 text-sm shadow-sm hover:shadow-md cursor-pointer active:scale-95"
+              >
+                <MessageSquare className="size-4.5 fill-white" />
+                <span>{language === "bn" ? "ডাক্তারকে মেসেজ" : "Message Doctor"}</span>
+              </Button>
+            )}
           </div>
         </div>
       </div>

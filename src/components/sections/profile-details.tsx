@@ -12,12 +12,14 @@ import {
   ShieldCheck,
   Stethoscope,
   UserCheck,
-  GraduationCap
+  GraduationCap,
+  MessageSquare
 } from "lucide-react";
 import type { Doctor, GalleryItem, Testimonial, WebsiteSetting } from "@/lib/types";
 import { safeImageSrc } from "@/lib/utils";
 import { GalleryStrip, TestimonialSlider } from "@/components/sections/profile-media";
 import { useLanguage } from "@/context/language-context";
+import { useChat } from "@/context/chat-context";
 
 const blockKeyMap: Record<string, string> = {
   "Qualifications": "profile.qualifications",
@@ -40,7 +42,9 @@ export function ProfileDetails({
   gallery: GalleryItem[];
   content: WebsiteSetting["content"];
 }) {
-  const { t, translate, formatCurrency } = useLanguage();
+  const { t, translate, formatCurrency, language } = useLanguage();
+  const { openChatWithDoctor, enablePatientChat, isPatientLoggedIn } = useChat();
+  const isChatEnabled = enablePatientChat !== false && doctor.enablePatientChat !== false && isPatientLoggedIn;
   const expertiseIcons = [GraduationCap, BriefcaseBusiness, Award, BookOpen];
   const serviceIcons = [HeartPulse, Activity, Stethoscope, CalendarCheck, UserCheck, Pill, BriefcaseBusiness, ShieldCheck];
 
@@ -136,8 +140,22 @@ export function ProfileDetails({
                 }}
               />
               <div className="p-6 bg-white border-t border-line">
-                <p className="text-base font-extrabold text-ink">{doctorName}</p>
-                <p className="text-xs text-muted mt-0.5">{designation} &middot; {specialization}</p>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-base font-extrabold text-ink">{doctorName}</p>
+                    <p className="text-xs text-muted mt-0.5">{designation} &middot; {specialization}</p>
+                  </div>
+                  {isChatEnabled && (
+                    <button
+                      type="button"
+                      onClick={openChatWithDoctor}
+                      className="inline-flex items-center gap-2 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white px-4 py-2 text-xs font-bold shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                    >
+                      <MessageSquare className="size-3.5 fill-white" />
+                      <span>{language === "bn" ? "চ্যাট করুন" : "Chat Now"}</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 

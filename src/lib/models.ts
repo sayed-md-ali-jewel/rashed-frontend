@@ -125,6 +125,7 @@ const DoctorSchema = new Schema(
     experience: [{ type: String }],
     awards: [{ type: String }],
     services: [{ type: String }],
+    enablePatientChat: { type: Boolean, default: true },
     seo: { type: Schema.Types.Mixed, default: () => ({}) }
   },
   { timestamps: true }
@@ -688,6 +689,7 @@ const WebsiteSettingSchema = new Schema(
     robotsTxtCustom: { type: String, default: "" },
     sitemapEnabled: { type: Boolean, default: true },
     disallowedPaths: [{ type: String }],
+    enablePatientChat: { type: Boolean, default: true },
     facebookUrl: { type: String, default: "" },
     linkedinUrl: { type: String, default: "" },
     xUrl: { type: String, default: "" },
@@ -708,6 +710,77 @@ const WebsiteSettingSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// 32. Conversation Model (Doctor-Patient WhatsApp-Style Messaging)
+const ConversationSchema = new Schema(
+  {
+    patientId: { type: objectId, ref: "Patient", required: true, index: true },
+    doctorId: { type: objectId, ref: "Doctor", index: true },
+    status: {
+      type: String,
+      enum: ["pending", "active", "closed", "blocked", "rejected"],
+      default: "pending",
+      index: true
+    },
+    approvedAt: { type: Date },
+    approvedBy: { type: objectId, ref: "AdminUser" },
+    rejectedAt: { type: Date },
+    closedAt: { type: Date },
+    blockedAt: { type: Date },
+    patientName: { type: String, default: "" },
+    patientPhone: { type: String, default: "", index: true },
+    patientAvatar: { type: String, default: "" },
+    doctorName: { type: String, default: "Dr. Md. Rashedul Alam" },
+    doctorAvatar: { type: String, default: "" },
+    firstMessage: { type: String, default: "" },
+    lastMessage: { type: String, default: "" },
+    lastMessageAt: { type: Date, default: Date.now, index: true },
+    lastSenderType: { type: String, enum: ["patient", "doctor"], default: "patient" },
+    unreadCountDoctor: { type: Number, default: 0 },
+    unreadCountPatient: { type: Number, default: 0 }
+  },
+  { timestamps: true }
+);
+
+ConversationSchema.index({ patientId: 1, doctorId: 1 });
+ConversationSchema.index({ status: 1, lastMessageAt: -1 });
+ConversationSchema.index({ patientPhone: 1, status: 1 });
+
+// 33. Message Model (WhatsApp-Style Individual Messages)
+const MessageSchema = new Schema(
+  {
+    conversationId: { type: objectId, ref: "Conversation", required: true, index: true },
+    senderId: { type: String, required: true },
+    senderType: {
+      type: String,
+      enum: ["patient", "doctor"],
+      required: true,
+      index: true
+    },
+    senderName: { type: String, default: "" },
+    message: { type: String, required: true },
+    attachments: [
+      {
+        url: { type: String, required: true },
+        fileType: { type: String, default: "image" },
+        fileName: { type: String, default: "" },
+        fileSize: { type: Number, default: 0 }
+      }
+    ],
+    status: {
+      type: String,
+      enum: ["sent", "delivered", "read"],
+      default: "sent",
+      index: true
+    },
+    deliveredAt: { type: Date },
+    readAt: { type: Date }
+  },
+  { timestamps: true }
+);
+
+MessageSchema.index({ conversationId: 1, createdAt: 1 });
+MessageSchema.index({ conversationId: 1, status: 1 });
 
 // Export Mongoose Models with Next.js HMR caching
 export const AdminUserModel = models.AdminUser ?? model("AdminUser", AdminUserSchema);
@@ -741,3 +814,5 @@ export const PageModel = models.Page ?? model("Page", PageSchema);
 export const PageSectionModel = models.PageSection ?? model("PageSection", PageSectionSchema);
 export const MediaModel = models.Media ?? model("Media", MediaSchema);
 export const AuditLogModel = models.AuditLog ?? model("AuditLog", AuditLogSchema);
+export const ConversationModel = models.Conversation ?? model("Conversation", ConversationSchema);
+export const MessageModel = models.Message ?? model("Message", MessageSchema);

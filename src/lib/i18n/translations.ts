@@ -240,7 +240,24 @@ export const translations = {
     "notFound.button": "View appointments",
 
     // Floating Button
-    "floating.book": "Book Appointment"
+    "floating.book": "Book Appointment",
+
+    // Chat & Messaging
+    "chat.withDoctor": "Chat with Doctor",
+    "chat.directConsult": "Direct Doctor Consultation",
+    "chat.waitingApproval": "Waiting for doctor's approval",
+    "chat.requestSent": "Message request sent to doctor",
+    "chat.approved": "Your request has been approved. You can now chat in real time.",
+    "chat.rejected": "Your message request was declined.",
+    "chat.typeMessage": "Type a message...",
+    "chat.online": "Online",
+    "chat.offline": "Offline",
+    "chat.typingDoctor": "Doctor is typing...",
+    "chat.typingPatient": "Patient is typing...",
+    "chat.sendRequest": "Send Message Request",
+    "chat.sending": "Sending...",
+    "chat.closeChat": "Close Chat",
+    "chat.lockedNotice": "Messaging locked until doctor approves your request."
   },
 
   bn: {
@@ -479,7 +496,24 @@ export const translations = {
     "notFound.button": "অ্যাপয়েন্টমেন্ট দেখুন",
 
     // Floating Button
-    "floating.book": "অ্যাপয়েন্টমেন্ট বুকিং"
+    "floating.book": "অ্যাপয়েন্টমেন্ট বুকিং",
+
+    // Chat & Messaging
+    "chat.withDoctor": "ডাক্তারের সাথে চ্যাট করুন",
+    "chat.directConsult": "সরাসরি ডাক্তার পরামর্শ",
+    "chat.waitingApproval": "ডাক্তারের অনুমোদনের অপেক্ষায় রয়েছে",
+    "chat.requestSent": "ডাক্তারের কাছে বার্তার অনুরোধ পাঠানো হয়েছে",
+    "chat.approved": "আপনার বার্তার অনুরোধ অনুমোদিত হয়েছে। এখন আপনি সরাসরি চ্যাট করতে পারেন।",
+    "chat.rejected": "আপনার বার্তার অনুরোধটি গৃহীত হয়নি।",
+    "chat.typeMessage": "একটি বার্তা লিখুন...",
+    "chat.online": "অনলাইন",
+    "chat.offline": "অফলাইন",
+    "chat.typingDoctor": "ডাক্তার টাইপ করছেন...",
+    "chat.typingPatient": "রোগী টাইপ করছেন...",
+    "chat.sendRequest": "অনুরোধ পাঠান",
+    "chat.sending": "পাঠানো হচ্ছে...",
+    "chat.closeChat": "চ্যাট বন্ধ করুন",
+    "chat.lockedNotice": "ডাক্তার অনুমোদন করলেই সরাসরি রিয়েল-টাইম চ্যাট চালু হবে।"
   }
 } as const;
 

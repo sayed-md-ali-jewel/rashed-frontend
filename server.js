@@ -3,14 +3,14 @@ const next = require('next');
 const fs = require('fs');
 const path = require('path');
 
+const dev = process.env.NODE_ENV !== 'production';
 if (!process.env.NODE_ENV) {
-  process.env.NODE_ENV = 'production';
+  process.env.NODE_ENV = 'development';
 }
 if (!process.env.NEXT_PUBLIC_SITE_URL && process.env.NODE_ENV === 'production') {
   process.env.NEXT_PUBLIC_SITE_URL = 'https://drrashed.bd';
 }
 
-const dev = process.env.NODE_ENV === 'development';
 const hostname = process.env.HOSTNAME || '0.0.0.0';
 const port = parseInt(process.env.PORT || '3000', 10);
 
@@ -94,8 +94,10 @@ function tryServeUpload(req, res) {
   return false;
 }
 
+const { Server: SocketIOServer } = require('socket.io');
+
 app.prepare().then(() => {
-  createServer((req, res) => {
+  const server = createServer((req, res) => {
     // Attempt direct upload serving
     if (tryServeUpload(req, res)) {
       return;
@@ -109,7 +111,92 @@ app.prepare().then(() => {
     }
 
     handle(req, res);
-  }).listen(port, (err) => {
+  });
+
+  // Attach Socket.IO server for real-time doctor-patient messaging
+  const io = new SocketIOServer(server, {
+    path: '/api/socket/io',
+    cors: {
+      origin: '*',
+      methods: ['GET', 'POST']
+    },
+    pingTimeout: 20000,
+    pingInterval: 10000
+  });
+
+  global._socketIo = io;
+  global._onlineUsers = global._onlineUsers || new Map();
+
+  io.on('connection', (socket) => {
+    socket.on('user:join', (data) => {
+      if (!data) return;
+      const userKey = data.role === 'doctor' ? 'doctor' : (data.phone || data.userId || socket.id);
+      global._onlineUsers.set(userKey, {
+        role: data.role,
+        lastSeen: new Date(),
+        socketId: socket.id
+      });
+      if (data.role === 'doctor') {
+        socket.join('room_doctor');
+      } else {
+        socket.join(`room_patient_${userKey}`);
+        if (data.phone && String(data.phone) !== String(userKey)) {
+          socket.join(`room_patient_${data.phone}`);
+        }
+      }
+      io.emit('user:online', { userKey, role: data.role, lastSeen: new Date().toISOString() });
+    });
+
+    socket.on('conversation:join', (conversationId) => {
+      if (!conversationId) return;
+      socket.join(`room_conv_${String(conversationId)}`);
+    });
+
+    socket.on('conversation:leave', (conversationId) => {
+      if (!conversationId) return;
+      socket.leave(`room_conv_${String(conversationId)}`);
+    });
+
+    socket.on('typing:start', (data) => {
+      if (!data?.conversationId) return;
+      const convId = String(data.conversationId);
+      socket.to(`room_conv_${convId}`).emit('typing:start', data);
+      if (data.senderType === 'patient') {
+        socket.to('room_doctor').emit('typing:start', data);
+      }
+    });
+
+    socket.on('typing:stop', (data) => {
+      if (!data?.conversationId) return;
+      const convId = String(data.conversationId);
+      socket.to(`room_conv_${convId}`).emit('typing:stop', data);
+      if (data.senderType === 'patient') {
+        socket.to('room_doctor').emit('typing:stop', data);
+      }
+    });
+
+    socket.on('message:read', (data) => {
+      if (!data?.conversationId) return;
+      io.to(`room_conv_${data.conversationId}`).emit('message:read', {
+        ...data,
+        readAt: new Date().toISOString()
+      });
+    });
+
+    socket.on('disconnect', () => {
+      if (!global._onlineUsers) return;
+      for (const [key, val] of global._onlineUsers.entries()) {
+        if (val.socketId === socket.id) {
+          const lastSeen = new Date();
+          global._onlineUsers.delete(key);
+          io.emit('user:offline', { userKey: key, role: val.role, lastSeen: lastSeen.toISOString() });
+          break;
+        }
+      }
+    });
+  });
+
+  server.listen(port, (err) => {
     if (err) throw err;
     console.log(`Server running on port ${port}`);
   });
