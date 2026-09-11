@@ -105,17 +105,16 @@ jobs:
           } > deploy/.env.production
           cp deploy/.env.production deploy/.env
 
-          # Normalize FTP_SERVER_DIR (avoid double slashes like //_next)
-          TARGET_DIR="${FTP_SERVER_DIR:-./}"
-          if [ "$TARGET_DIR" = "/" ] || [ "$TARGET_DIR" = "" ]; then
-            TARGET_DIR="./"
+          # Normalize target server directory: strip all leading slashes, default to './'
+          RAW_DIR="${FTP_SERVER_DIR:-./}"
+          CLEAN_DIR="$(echo "$RAW_DIR" | sed -E 's|^[./]*||; s|/+$||')"
+          if [ -z "$CLEAN_DIR" ]; then
+            FINAL_DIR="./"
           else
-            TARGET_DIR="$(echo "$TARGET_DIR" | sed 's|^//*|/|')"
-            if [ "$TARGET_DIR" = "/" ]; then
-              TARGET_DIR="./"
-            fi
+            FINAL_DIR="${CLEAN_DIR}/"
           fi
-          echo "NORMALIZED_SERVER_DIR=$TARGET_DIR" >> $GITHUB_ENV
+          echo "NORMALIZED_SERVER_DIR=${FINAL_DIR}" >> "$GITHUB_ENV"
+          echo "Normalized FTP target directory to: ${FINAL_DIR}"
 
       - name: Upload to Webuzo by FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -126,7 +125,7 @@ jobs:
           protocol: ${{ env.FTP_PROTOCOL }}
           port: ${{ env.FTP_PORT }}
           local-dir: ./deploy/
-          server-dir: ${{ env.NORMALIZED_SERVER_DIR || env.FTP_SERVER_DIR || './' }}
+          server-dir: ${{ env.NORMALIZED_SERVER_DIR }}
           dangerous-clean-slate: false
           exclude: |
             **/.git*
