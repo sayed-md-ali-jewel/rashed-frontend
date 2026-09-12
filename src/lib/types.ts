@@ -82,17 +82,59 @@ export type Hospital = {
   active?: boolean;
 };
 
+export type ScheduleType = "daily" | "weekly" | "monthly" | "specific_date";
+
+export type DayOfWeek =
+  | "saturday"
+  | "sunday"
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday";
+
+export type ChamberScheduleRule = {
+  _id?: string;
+  id?: string;
+  hospitalId: string;
+  hospital?: Hospital;
+  title: string;
+  scheduleType: ScheduleType;
+  daysOfWeek?: string[]; // e.g. ["saturday", "monday", "wednesday"]
+  dayOfMonth?: number; // 1 to 31 for monthly
+  specificDate?: string; // YYYY-MM-DD for specific date
+  startTime: string; // e.g. "16:00" or "04:00 PM"
+  endTime: string; // e.g. "19:00" or "07:00 PM"
+  slotDurationMinutes: number;
+  fee: number;
+  maxAppointments: number;
+  active: boolean;
+  startDate?: string;
+  endDate?: string;
+  seo?: SEOFields;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type Schedule = {
   id: string;
+  _id?: string;
   title?: string;
   slug: string;
   hospital: Hospital;
+  hospitalId?: string;
   startsAt: string;
   endsAt: string;
   slotDurationMinutes: number;
   maxAppointments?: number;
   fee: number;
   bookedSlots: string[];
+  scheduleStatus?: "scheduled" | "cancelled" | "completed";
+  ruleId?: string;
+  isRecurring?: boolean;
+  scheduleType?: ScheduleType | "custom";
+  isCustomOverride?: boolean;
+  cancellationReason?: string;
   seo: SEOFields;
 };
 

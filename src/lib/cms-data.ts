@@ -10,6 +10,7 @@ import {
   TestimonialModel,
   WebsiteSettingModel
 } from "./models";
+import { ScheduleService } from "./services/schedule.service";
 import type { Doctor, GalleryItem, Hospital, Schedule, SEOFields, Testimonial, WebsiteSetting } from "./types";
 
 type MongoDocument = {
@@ -219,15 +220,23 @@ function mapSchedule(item: MongoDocument, bookedSlots: string[] = []): Schedule 
 
   return {
     id,
+    _id: id,
     title,
     slug: asString(item.slug, id),
     hospital,
+    hospitalId: item.hospitalId ? String(item.hospitalId) : undefined,
     startsAt,
     endsAt,
     slotDurationMinutes: asNumber(item.slotDurationMinutes, 10),
     maxAppointments,
     fee: asNumber(item.fee, doctor.consultationFee),
     bookedSlots,
+    scheduleStatus: (item.scheduleStatus as any) || "scheduled",
+    ruleId: item.ruleId ? String(item.ruleId) : undefined,
+    isRecurring: Boolean(item.isRecurring),
+    scheduleType: (item.scheduleType as any) || "custom",
+    isCustomOverride: Boolean(item.isCustomOverride),
+    cancellationReason: asString(item.cancellationReason),
     seo: mapSeo(item.seo, fallbackSeo)
   };
 }
@@ -343,6 +352,9 @@ export async function getLandingPageData(): Promise<LandingPageData> {
 
   try {
     await connectMongo();
+
+    // Ensure recurring rules have their upcoming occurrences materialized
+    await ScheduleService.ensureUpcomingSchedules(60).catch(() => {});
 
     const [doctorItem, scheduleItems, hospitalItems, testimonialItems, galleryItems, websiteSettingItem, serviceItems] = await Promise.all([
       DoctorModel.findOne().sort({ updatedAt: -1 }).lean<MongoDocument | null>(),

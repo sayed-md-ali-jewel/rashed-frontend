@@ -72,6 +72,10 @@ export const translations = {
     "schedule.availableOfTotal": "{available} of {total} available",
     "schedule.openQueue": "Open queue",
     "schedule.selectSlot": "Select Slot",
+    "schedule.activeNow": "Active Now • Session in Progress",
+    "schedule.nextUpcoming": "Next Available Chamber Session",
+    "schedule.sessionExpired": "This session has ended",
+    "schedule.bookNextSession": "Book Next Available Session",
 
     // Profile & Medical Services
     "profile.servicesBadge": "Clinical Expertise",
@@ -328,6 +332,10 @@ export const translations = {
     "schedule.availableOfTotal": "{total}টির মধ্যে {available}টি খালি",
     "schedule.openQueue": "উন্মুক্ত সিরিয়াল",
     "schedule.selectSlot": "স্লট নির্বাচন করুন",
+    "schedule.activeNow": "সেশন চলমান • এখনই বুকিং করুন",
+    "schedule.nextUpcoming": "পরবর্তী উপলব্ধ চেম্বার সেশন",
+    "schedule.sessionExpired": "এই সেশনের সময় সমাপ্ত হয়েছে",
+    "schedule.bookNextSession": "পরবর্তী সেশনের জন্য বুক করুন",
 
     // Profile & Medical Services
     "profile.servicesBadge": "ক্লিনিক্যাল দক্ষতা",

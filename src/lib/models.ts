@@ -150,6 +150,16 @@ const ScheduleSchema = new Schema(
       enum: ["scheduled", "cancelled", "completed"],
       default: "scheduled"
     },
+    ruleId: { type: objectId, ref: "ChamberScheduleRule", index: true },
+    isRecurring: { type: Boolean, default: false },
+    scheduleType: {
+      type: String,
+      enum: ["daily", "weekly", "monthly", "specific_date", "custom"],
+      default: "custom"
+    },
+    isCustomOverride: { type: Boolean, default: false },
+    cancellationReason: { type: String, default: "" },
+    rescheduleNotes: { type: String, default: "" },
     seo: { type: SeoSchema, default: () => ({}) }
   },
   { timestamps: true }
@@ -306,27 +316,39 @@ const ServiceSchema = new Schema(
   { timestamps: true }
 );
 
-// 14. Hospital Schedule Pattern Model
-const HospitalScheduleSchema = new Schema(
+// 14. Chamber Schedule Rule (Recurring Pattern Model)
+const ChamberScheduleRuleSchema = new Schema(
   {
     hospitalId: { type: objectId, ref: "Hospital", required: true, index: true },
-    hospitalName: { type: String, default: "" },
-    dayOfWeek: {
+    hospital: { type: EmbeddedHospitalSchema },
+    title: { type: String, required: true, default: "Chamber Consultation" },
+    scheduleType: {
       type: String,
-      enum: ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
-      required: true
+      enum: ["daily", "weekly", "monthly", "specific_date"],
+      required: true,
+      default: "weekly",
+      index: true
     },
+    daysOfWeek: [{ type: String }],
+    dayOfMonth: { type: Number, min: 1, max: 31 },
+    specificDate: { type: Date },
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
-    appointmentDurationMinutes: { type: Number, default: 15 },
+    slotDurationMinutes: { type: Number, required: true, default: 10 },
+    fee: { type: Number, required: true, default: 1000 },
+    maxAppointments: { type: Number, default: 20 },
     breakStartTime: { type: String, default: "" },
     breakEndTime: { type: String, default: "" },
-    maxAppointments: { type: Number, default: 20 },
-    recurringWeekly: { type: Boolean, default: true },
-    active: { type: Boolean, default: true }
+    active: { type: Boolean, default: true, index: true },
+    startDate: { type: Date },
+    endDate: { type: Date },
+    seo: { type: SeoSchema, default: () => ({}) }
   },
   { timestamps: true }
 );
+
+// Backward compatibility alias
+const HospitalScheduleSchema = ChamberScheduleRuleSchema;
 
 // 15. Schedule Exception Model
 const ScheduleExceptionSchema = new Schema(
@@ -787,7 +809,10 @@ export const AdminUserModel = models.AdminUser ?? model("AdminUser", AdminUserSc
 export const DoctorModel = models.Doctor ?? model("Doctor", DoctorSchema);
 export const HospitalModel = models.Hospital ?? model("Hospital", HospitalSchema);
 export const ScheduleModel = models.Schedule ?? model("Schedule", ScheduleSchema);
-export const HospitalScheduleModel = models.HospitalSchedule ?? model("HospitalSchedule", HospitalScheduleSchema);
+export const ChamberScheduleRuleModel =
+  models.ChamberScheduleRule ?? model("ChamberScheduleRule", ChamberScheduleRuleSchema);
+export const HospitalScheduleModel =
+  models.HospitalSchedule ?? models.ChamberScheduleRule ?? model("HospitalSchedule", HospitalScheduleSchema);
 export const ScheduleExceptionModel = models.ScheduleException ?? model("ScheduleException", ScheduleExceptionSchema);
 export const TestimonialModel = models.Testimonial ?? model("Testimonial", TestimonialSchema);
 export const GalleryItemModel = models.GalleryItem ?? model("GalleryItem", GalleryItemSchema);

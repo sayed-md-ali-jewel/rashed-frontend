@@ -189,6 +189,30 @@ type HospitalRecord = {
   createdAt?: string;
 };
 
+type ChamberScheduleRuleRecord = {
+  _id?: string;
+  id?: string;
+  hospitalId?: string;
+  hospital?: any;
+  title?: string;
+  scheduleType?: "daily" | "weekly" | "monthly" | "specific_date";
+  daysOfWeek?: string[];
+  dayOfMonth?: number;
+  specificDate?: string;
+  startTime?: string;
+  endTime?: string;
+  slotDurationMinutes?: number;
+  fee?: number;
+  maxAppointments?: number;
+  breakStartTime?: string;
+  breakEndTime?: string;
+  active?: boolean;
+  startDate?: string;
+  endDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 type ScheduleRecord = {
   _id?: string;
   id?: string;
@@ -202,6 +226,12 @@ type ScheduleRecord = {
   fee?: number;
   maxAppointments?: number;
   scheduleStatus?: "scheduled" | "completed" | "cancelled";
+  ruleId?: string;
+  isRecurring?: boolean;
+  scheduleType?: "daily" | "weekly" | "monthly" | "specific_date" | "custom";
+  isCustomOverride?: boolean;
+  cancellationReason?: string;
+  rescheduleNotes?: string;
   createdAt?: string;
   bookedSlots?: string[];
 };
@@ -709,6 +739,1013 @@ function HospitalModalDialog({
   );
 }
 
+function format12Hour(timeStr?: string): string {
+  if (!timeStr) return "";
+  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return timeStr;
+  let h = parseInt(match[1], 10);
+  const m = match[2];
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+function calculatePreviewDates(
+  scheduleType: string,
+  daysOfWeek: string[] = [],
+  dayOfMonth: number = 13,
+  specificDate: string = "",
+  startTime: string = "16:00",
+  endTime: string = "19:00",
+  count = 5
+): Array<{ formattedDate: string; dayName: string; timeRange: string }> {
+  const dates: Array<{ formattedDate: string; dayName: string; timeRange: string }> = [];
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const timeRange = `${format12Hour(startTime)} – ${format12Hour(endTime)}`;
+
+  if (scheduleType === "specific_date") {
+    if (specificDate) {
+      const d = new Date(specificDate);
+      if (!isNaN(d.getTime())) {
+        dates.push({
+          formattedDate: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          dayName: d.toLocaleDateString("en-US", { weekday: "long" }),
+          timeRange,
+        });
+      }
+    }
+    return dates;
+  }
+
+  if (scheduleType === "daily") {
+    const cursor = new Date(today);
+    while (dates.length < count) {
+      dates.push({
+        formattedDate: cursor.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        dayName: cursor.toLocaleDateString("en-US", { weekday: "long" }),
+        timeRange,
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return dates;
+  }
+
+  if (scheduleType === "weekly") {
+    const normalizedDays = (daysOfWeek || []).map((d) => d.toLowerCase().trim());
+    if (normalizedDays.length === 0) return dates;
+    const cursor = new Date(today);
+    let iterations = 0;
+    while (dates.length < count && iterations < 90) {
+      const dayNameLower = cursor.toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+      if (normalizedDays.includes(dayNameLower)) {
+        dates.push({
+          formattedDate: cursor.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+          dayName: cursor.toLocaleDateString("en-US", { weekday: "long" }),
+          timeRange,
+        });
+      }
+      cursor.setDate(cursor.getDate() + 1);
+      iterations++;
+    }
+    return dates;
+  }
+
+  if (scheduleType === "monthly") {
+    const targetDay = Math.min(31, Math.max(1, Number(dayOfMonth) || 1));
+    let year = today.getFullYear();
+    let month = today.getMonth();
+
+    for (let i = 0; i < count + 6 && dates.length < count; i++) {
+      const maxDaysInMonth = new Date(year, month + 1, 0).getDate();
+      const actualDay = Math.min(targetDay, maxDaysInMonth);
+      const occurrence = new Date(year, month, actualDay);
+      if (occurrence >= today) {
+        dates.push({
+          formattedDate: occurrence.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          dayName: occurrence.toLocaleDateString("en-US", { weekday: "long" }),
+          timeRange,
+        });
+      }
+      month++;
+      if (month > 11) {
+        month = 0;
+        year++;
+      }
+    }
+    return dates;
+  }
+
+  return dates;
+}
+
+function ScheduleRuleModalDialog({
+  isOpen,
+  onClose,
+  editingRule,
+  hospitals,
+  onSaved,
+  triggerToast,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  editingRule: ChamberScheduleRuleRecord | null;
+  hospitals: HospitalRecord[];
+  onSaved: () => void;
+  triggerToast: (msg: string, isError?: boolean) => void;
+}) {
+  const [selectedHospitalId, setSelectedHospitalId] = useState<string>("");
+  const [title, setTitle] = useState<string>("");
+  const [scheduleType, setScheduleType] = useState<"daily" | "weekly" | "monthly" | "specific_date">("weekly");
+  const [daysOfWeek, setDaysOfWeek] = useState<string[]>(["saturday", "monday", "wednesday"]);
+  const [dayOfMonth, setDayOfMonth] = useState<number>(13);
+  const [specificDate, setSpecificDate] = useState<string>("");
+  const [startTime, setStartTime] = useState<string>("16:00");
+  const [endTime, setEndTime] = useState<string>("19:00");
+  const [slotDurationMinutes, setSlotDurationMinutes] = useState<number>(10);
+  const [maxAppointments, setMaxAppointments] = useState<number>(20);
+  const [fee, setFee] = useState<number>(1000);
+  const [active, setActive] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (editingRule) {
+      setSelectedHospitalId(editingRule.hospitalId || recordId(hospitals[0]));
+      setTitle(editingRule.title || "");
+      setScheduleType(editingRule.scheduleType || "weekly");
+      setDaysOfWeek(editingRule.daysOfWeek?.map((d) => d.toLowerCase()) || ["saturday", "monday", "wednesday"]);
+      setDayOfMonth(editingRule.dayOfMonth || 13);
+      setSpecificDate(editingRule.specificDate ? editingRule.specificDate.slice(0, 10) : "");
+      setStartTime(editingRule.startTime || "16:00");
+      setEndTime(editingRule.endTime || "19:00");
+      setSlotDurationMinutes(editingRule.slotDurationMinutes || 10);
+      setMaxAppointments(editingRule.maxAppointments || 20);
+      setFee(editingRule.fee || 1000);
+      setActive(editingRule.active !== false);
+    } else {
+      const defaultHosp = hospitals[0];
+      setSelectedHospitalId(recordId(defaultHosp));
+      setTitle(defaultHosp?.name ? `${defaultHosp.name} Consultation` : "Chamber Consultation");
+      setScheduleType("weekly");
+      setDaysOfWeek(["saturday", "monday", "wednesday"]);
+      setDayOfMonth(13);
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      setSpecificDate(nextWeek.toISOString().slice(0, 10));
+      setStartTime("16:00");
+      setEndTime("19:00");
+      setSlotDurationMinutes(10);
+      setMaxAppointments(20);
+      setFee(defaultHosp?.consultationFee || 1000);
+      setActive(true);
+    }
+  }, [editingRule, hospitals, isOpen]);
+
+  const toggleDayOfWeek = (day: string) => {
+    const dayLower = day.toLowerCase();
+    setDaysOfWeek((prev) =>
+      prev.includes(dayLower)
+        ? prev.filter((d) => d !== dayLower)
+        : [...prev, dayLower]
+    );
+  };
+
+  const previewDates = useMemo(() => {
+    return calculatePreviewDates(
+      scheduleType,
+      daysOfWeek,
+      dayOfMonth,
+      specificDate,
+      startTime,
+      endTime,
+      5
+    );
+  }, [scheduleType, daysOfWeek, dayOfMonth, specificDate, startTime, endTime]);
+
+  if (!isOpen) return null;
+  const isEdit = Boolean(editingRule && recordId(editingRule));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (scheduleType === "weekly" && daysOfWeek.length === 0) {
+      triggerToast("Please select at least one day of the week for weekly recurring schedule", true);
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const url = isEdit
+        ? `/api/admin/schedule-rules/${recordId(editingRule)}`
+        : "/api/admin/schedule-rules";
+      const method = isEdit ? "PATCH" : "POST";
+
+      const selectedHospital = hospitals.find((h) => recordId(h) === selectedHospitalId);
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hospitalId: selectedHospitalId,
+          hospital: selectedHospital,
+          title,
+          scheduleType,
+          daysOfWeek: scheduleType === "weekly" ? daysOfWeek : undefined,
+          dayOfMonth: scheduleType === "monthly" ? Number(dayOfMonth) : undefined,
+          specificDate: scheduleType === "specific_date" ? specificDate : undefined,
+          startTime,
+          endTime,
+          slotDurationMinutes: Number(slotDurationMinutes),
+          maxAppointments: Number(maxAppointments),
+          fee: Number(fee),
+          active,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to save schedule rule");
+      }
+
+      triggerToast(
+        isEdit
+          ? "Recurring schedule rule updated & occurrences synchronized!"
+          : "Recurring schedule rule created & upcoming dates generated!"
+      );
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      triggerToast(err.message, true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
+      <Card className="w-full max-w-2xl border-slate-800 bg-slate-900 p-6 rounded-2xl space-y-4 animate-in zoom-in-95 max-h-[92vh] overflow-y-auto shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="font-bold text-white text-lg flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-teal-400" />
+              <span>{isEdit ? "Edit Recurring Schedule Rule" : "Create Recurring Schedule Rule"}</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Set the schedule once and the system will automatically generate all upcoming chamber dates
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {/* Chamber / Hospital */}
+          <div>
+            <label className="block text-slate-300 font-medium mb-1.5 flex items-center gap-1.5">
+              <Hospital className="h-3.5 w-3.5 text-teal-400" />
+              <span>Chamber / Hospital <span className="text-rose-400">*</span></span>
+            </label>
+            <select
+              value={selectedHospitalId}
+              onChange={(e) => {
+                const hId = e.target.value;
+                setSelectedHospitalId(hId);
+                const h = hospitals.find((item) => recordId(item) === hId);
+                if (h) {
+                  if (!isEdit) setTitle(`${h.name} Consultation`);
+                  if (h.consultationFee) setFee(h.consultationFee);
+                }
+              }}
+              required
+              className="w-full rounded-xl border border-slate-800 bg-slate-950 p-2.5 text-xs text-slate-200 focus:border-teal-500 focus:outline-none"
+            >
+              {hospitals.map((h) => (
+                <option key={recordId(h)} value={recordId(h)}>
+                  {h.name} {h.address ? `(${h.address})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Schedule Title */}
+          <div>
+            <label className="block text-slate-300 font-medium mb-1.5">
+              Schedule Title <span className="text-rose-400">*</span>
+            </label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. City Care Evening Consultation"
+              required
+              className="border-slate-800 bg-slate-950 text-slate-200 focus:border-teal-500"
+            />
+          </div>
+
+          {/* Schedule Type Selection Tabs */}
+          <div className="space-y-2">
+            <label className="block text-slate-300 font-medium flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-teal-400" />
+                <span>Schedule Type <span className="text-rose-400">*</span></span>
+              </span>
+              <span className="text-[11px] text-teal-400 font-semibold uppercase tracking-wider">
+                {scheduleType.replace("_", " ")}
+              </span>
+            </label>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => setScheduleType("weekly")}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-semibold transition-all ${
+                  scheduleType === "weekly"
+                    ? "bg-teal-500/20 border-teal-500 text-teal-300 shadow-md shadow-teal-950/50"
+                    : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                }`}
+              >
+                <Calendar className="h-4 w-4 mb-1 text-teal-400" />
+                <span>Weekly</span>
+                <span className="text-[10px] font-normal opacity-70">Specific Days/Week</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setScheduleType("monthly")}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-semibold transition-all ${
+                  scheduleType === "monthly"
+                    ? "bg-teal-500/20 border-teal-500 text-teal-300 shadow-md shadow-teal-950/50"
+                    : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                }`}
+              >
+                <CalendarCheck className="h-4 w-4 mb-1 text-emerald-400" />
+                <span>Monthly</span>
+                <span className="text-[10px] font-normal opacity-70">Specific Day of Month</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setScheduleType("daily")}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-semibold transition-all ${
+                  scheduleType === "daily"
+                    ? "bg-teal-500/20 border-teal-500 text-teal-300 shadow-md shadow-teal-950/50"
+                    : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                }`}
+              >
+                <Clock className="h-4 w-4 mb-1 text-sky-400" />
+                <span>Daily</span>
+                <span className="text-[10px] font-normal opacity-70">Every Single Day</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setScheduleType("specific_date")}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-semibold transition-all ${
+                  scheduleType === "specific_date"
+                    ? "bg-teal-500/20 border-teal-500 text-teal-300 shadow-md shadow-teal-950/50"
+                    : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                }`}
+              >
+                <CalendarClock className="h-4 w-4 mb-1 text-amber-400" />
+                <span>Specific Date</span>
+                <span className="text-[10px] font-normal opacity-70">One-off session</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Conditional Type Configs */}
+          {scheduleType === "weekly" && (
+            <div className="rounded-xl border border-teal-900/40 bg-teal-950/20 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-teal-300 block">
+                    Days of the Week (Shown for Weekly)
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Select the days this chamber operates each week (e.g. Saturday, Monday, Wednesday)
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setDaysOfWeek(["saturday", "monday", "wednesday"])}
+                    className="rounded px-2 py-0.5 text-[10px] bg-teal-500/20 text-teal-300 border border-teal-500/40 font-medium hover:bg-teal-500/30"
+                  >
+                    Sat, Mon, Wed
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDaysOfWeek(["sunday", "tuesday", "thursday"])}
+                    className="rounded px-2 py-0.5 text-[10px] bg-slate-800 text-slate-300 border border-slate-700 font-medium hover:bg-slate-700"
+                  >
+                    Sun, Tue, Thu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDaysOfWeek(["saturday", "sunday", "monday", "tuesday", "wednesday", "thursday"])}
+                    className="rounded px-2 py-0.5 text-[10px] bg-slate-800 text-slate-300 border border-slate-700 font-medium hover:bg-slate-700"
+                  >
+                    Sat - Thu
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+                {[
+                  { key: "saturday", label: "Saturday", short: "Sat" },
+                  { key: "sunday", label: "Sunday", short: "Sun" },
+                  { key: "monday", label: "Monday", short: "Mon" },
+                  { key: "tuesday", label: "Tuesday", short: "Tue" },
+                  { key: "wednesday", label: "Wednesday", short: "Wed" },
+                  { key: "thursday", label: "Thursday", short: "Thu" },
+                  { key: "friday", label: "Friday", short: "Fri" },
+                ].map((d) => {
+                  const isSelected = daysOfWeek.includes(d.key);
+                  return (
+                    <button
+                      key={d.key}
+                      type="button"
+                      onClick={() => toggleDayOfWeek(d.key)}
+                      className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border text-xs font-semibold transition-all ${
+                        isSelected
+                          ? "bg-teal-500 border-teal-400 text-slate-950 shadow-md shadow-teal-950 font-bold"
+                          : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                      }`}
+                    >
+                      <span>{d.short}</span>
+                      <span className="text-[9px] opacity-80 mt-0.5">{isSelected ? "✓ Active" : "+ Add"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {daysOfWeek.length > 0 ? (
+                <p className="text-[11px] text-teal-300 font-medium flex items-center gap-1">
+                  <Check className="h-3.5 w-3.5 text-teal-400" />
+                  <span>
+                    Chamber will automatically run every:{" "}
+                    <strong>
+                      {daysOfWeek.map((d) => d.charAt(0).toUpperCase() + d.slice(1)).join(", ")}
+                    </strong>
+                  </span>
+                </p>
+              ) : (
+                <p className="text-[11px] text-rose-400 font-semibold">
+                  ⚠️ Please select at least one day of the week.
+                </p>
+              )}
+            </div>
+          )}
+
+          {scheduleType === "monthly" && (
+            <div className="rounded-xl border border-emerald-900/40 bg-emerald-950/20 p-4 space-y-3">
+              <div>
+                <span className="text-xs font-bold text-emerald-300 block">
+                  Day of the Month (Shown for Monthly)
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  Select the specific date number of each month (e.g., 13 for 13th day of every month)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="w-36">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={dayOfMonth}
+                    onChange={(e) => setDayOfMonth(Math.min(31, Math.max(1, Number(e.target.value) || 1)))}
+                    required
+                    className="border-slate-800 bg-slate-950 text-slate-200 text-center font-bold text-sm focus:border-emerald-500"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[1, 5, 10, 13, 15, 20, 25, 28].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => setDayOfMonth(num)}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold border transition-all ${
+                        dayOfMonth === num
+                          ? "bg-emerald-500 text-slate-950 border-emerald-400 font-bold shadow"
+                          : "bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700"
+                      }`}
+                    >
+                      {num}{num === 1 ? "st" : num === 2 ? "nd" : num === 3 ? "rd" : "th"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-[11px] text-emerald-300 font-medium flex items-center gap-1">
+                <Check className="h-3.5 w-3.5 text-emerald-400" />
+                <span>
+                  Chamber will automatically run on the <strong>{dayOfMonth}{dayOfMonth === 1 ? "st" : dayOfMonth === 2 ? "nd" : dayOfMonth === 3 ? "rd" : "th"} day of every month</strong>.
+                </span>
+              </p>
+            </div>
+          )}
+
+          {scheduleType === "daily" && (
+            <div className="rounded-xl border border-sky-900/40 bg-sky-950/20 p-4 flex items-start gap-3">
+              <Clock className="h-5 w-5 text-sky-400 mt-0.5 shrink-0" />
+              <div>
+                <span className="text-xs font-bold text-sky-300 block">Daily Recurring Schedule</span>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  The system will automatically generate active consultation sessions for <strong>every single day</strong> of the week at the configured hours.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {scheduleType === "specific_date" && (
+            <div className="rounded-xl border border-amber-900/40 bg-amber-950/20 p-4 space-y-3">
+              <div>
+                <span className="text-xs font-bold text-amber-300 block">
+                  Specific Date (Shown for Specific Date)
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  Select the exact date for this one-off consultation session
+                </span>
+              </div>
+              <Input
+                type="date"
+                value={specificDate}
+                onChange={(e) => setSpecificDate(e.target.value)}
+                required
+                className="border-slate-800 bg-slate-950 text-slate-200 w-full sm:w-64 focus:border-amber-500"
+              />
+            </div>
+          )}
+
+          {/* Start Time & End Time */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 space-y-1.5">
+              <label className="block text-slate-300 font-medium flex items-center justify-between">
+                <span>Start Time <span className="text-rose-400">*</span></span>
+                <span className="text-[11px] text-teal-400 font-bold">{format12Hour(startTime)}</span>
+              </label>
+              <Input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                required
+                className="border-slate-800 bg-slate-950 text-slate-200 font-mono text-sm"
+              />
+            </div>
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 space-y-1.5">
+              <label className="block text-slate-300 font-medium flex items-center justify-between">
+                <span>End Time <span className="text-rose-400">*</span></span>
+                <span className="text-[11px] text-teal-400 font-bold">{format12Hour(endTime)}</span>
+              </label>
+              <Input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                required
+                className="border-slate-800 bg-slate-950 text-slate-200 font-mono text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Slot Duration, Max Slots, Fee */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">Slot Duration (Min)</label>
+              <Input
+                type="number"
+                min={5}
+                max={120}
+                value={slotDurationMinutes}
+                onChange={(e) => setSlotDurationMinutes(Number(e.target.value))}
+                required
+                className="border-slate-800 bg-slate-950 text-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">Max Slots/Appointments</label>
+              <Input
+                type="number"
+                min={1}
+                max={200}
+                value={maxAppointments}
+                onChange={(e) => setMaxAppointments(Number(e.target.value))}
+                required
+                className="border-slate-800 bg-slate-950 text-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">Consultation Fee (৳)</label>
+              <Input
+                type="number"
+                min={0}
+                value={fee}
+                onChange={(e) => setFee(Number(e.target.value))}
+                required
+                className="border-slate-800 bg-slate-950 text-slate-200 font-semibold text-emerald-400"
+              />
+            </div>
+          </div>
+
+          {/* Active Status */}
+          <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-3.5">
+            <div>
+              <span className="text-xs font-bold text-white block">Rule Status</span>
+              <span className="text-[11px] text-slate-400">
+                {active ? "Active — system will auto-generate upcoming dates" : "Inactive — no new occurrences generated"}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActive(!active)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                active ? "bg-teal-500" : "bg-slate-800"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  active ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Live Preview of Generated Dates */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                <span>Live Date Preview (Next 5 Generated Occurrences)</span>
+              </span>
+              <Badge className="bg-teal-500/15 text-teal-300 border-teal-500/30 text-[10px]">
+                {format12Hour(startTime)} – {format12Hour(endTime)}
+              </Badge>
+            </div>
+
+            {previewDates.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                {previewDates.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-2 rounded-lg border border-slate-800/80 bg-slate-900/60 text-slate-300"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="grid size-5 place-items-center rounded-full bg-teal-500/20 text-teal-300 text-[10px] font-bold">
+                        {idx + 1}
+                      </span>
+                      <div>
+                        <span className="font-bold text-white text-xs block">{item.formattedDate}</span>
+                        <span className="text-[10px] text-slate-400">{item.dayName}</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono text-emerald-400 font-semibold">
+                      {item.timeRange}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-500 italic py-1">
+                Select valid days / dates above to preview upcoming occurrences.
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="border-slate-800 text-slate-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-semibold gap-1.5 px-5"
+            >
+              {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SaveIcon className="h-3.5 w-3.5" />}
+              <span>{isEdit ? "Save Rule Changes" : "Save & Generate Occurrences"}</span>
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
+  );
+}
+
+function RescheduleOccurrenceModalDialog({
+  isOpen,
+  onClose,
+  schedule,
+  onSaved,
+  triggerToast,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  schedule: ScheduleRecord | null;
+  onSaved: () => void;
+  triggerToast: (msg: string, isError?: boolean) => void;
+}) {
+  const [startsAt, setStartsAt] = useState<string>("");
+  const [endsAt, setEndsAt] = useState<string>("");
+  const [fee, setFee] = useState<number>(1000);
+  const [slotDurationMinutes, setSlotDurationMinutes] = useState<number>(10);
+  const [maxAppointments, setMaxAppointments] = useState<number>(20);
+  const [notes, setNotes] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (schedule) {
+      setStartsAt(toLocalDatetimeInput(schedule.startsAt));
+      setEndsAt(toLocalDatetimeInput(schedule.endsAt));
+      setFee(schedule.fee || 1000);
+      setSlotDurationMinutes(schedule.slotDurationMinutes || 10);
+      setMaxAppointments(schedule.maxAppointments || 20);
+      setNotes(schedule.rescheduleNotes || "");
+    }
+  }, [schedule, isOpen]);
+
+  if (!isOpen || !schedule) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/schedules/${recordId(schedule)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reschedule",
+          startsAt: new Date(startsAt).toISOString(),
+          endsAt: endsAt ? new Date(endsAt).toISOString() : undefined,
+          fee: Number(fee),
+          slotDurationMinutes: Number(slotDurationMinutes),
+          maxAppointments: Number(maxAppointments),
+          notes,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to reschedule session");
+      }
+      triggerToast("Specific day's schedule updated! Recurring master rule remains untouched.");
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      triggerToast(err.message, true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
+      <Card className="w-full max-w-lg border-slate-800 bg-slate-900 p-6 rounded-2xl space-y-4 animate-in zoom-in-95 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="font-bold text-white text-lg flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-amber-400" />
+              <span>Reschedule / Customize Single Day</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {schedule.hospital?.name || "Chamber"} &bull; {formatSlotDateLong(schedule.startsAt)}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-slate-400 hover:text-white hover:bg-slate-800"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-200">
+          💡 <strong>Single Day Override</strong>: Changing times or fees here only affects this single date. The master recurring rule and other dates will remain unchanged.
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">
+                Start Date & Time <span className="text-rose-400">*</span>
+              </label>
+              <Input
+                type="datetime-local"
+                value={startsAt}
+                onChange={(e) => setStartsAt(e.target.value)}
+                required
+                className="border-slate-800 bg-slate-950 text-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">
+                End Date & Time
+              </label>
+              <Input
+                type="datetime-local"
+                value={endsAt}
+                onChange={(e) => setEndsAt(e.target.value)}
+                className="border-slate-800 bg-slate-950 text-slate-200"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">Duration (Min)</label>
+              <Input
+                type="number"
+                value={slotDurationMinutes}
+                onChange={(e) => setSlotDurationMinutes(Number(e.target.value))}
+                className="border-slate-800 bg-slate-950 text-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">Max Slots</label>
+              <Input
+                type="number"
+                value={maxAppointments}
+                onChange={(e) => setMaxAppointments(Number(e.target.value))}
+                className="border-slate-800 bg-slate-950 text-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">Fee (৳)</label>
+              <Input
+                type="number"
+                value={fee}
+                onChange={(e) => setFee(Number(e.target.value))}
+                className="border-slate-800 bg-slate-950 text-slate-200 font-semibold text-emerald-400"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-medium mb-1">Override Reason / Notes</label>
+            <Input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. Extended evening session due to high demand"
+              className="border-slate-800 bg-slate-950 text-slate-200"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="border-slate-800 text-slate-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-amber-600 hover:bg-amber-500 text-white font-semibold gap-1.5"
+            >
+              {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SaveIcon className="h-3.5 w-3.5" />}
+              <span>Save Day Override</span>
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
+  );
+}
+
+function CancelOccurrenceModalDialog({
+  isOpen,
+  onClose,
+  schedule,
+  onSaved,
+  triggerToast,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  schedule: ScheduleRecord | null;
+  onSaved: () => void;
+  triggerToast: (msg: string, isError?: boolean) => void;
+}) {
+  const [reason, setReason] = useState<string>("Doctor unavailable / Emergency holiday");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen || !schedule) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/schedules/${recordId(schedule)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "cancel",
+          cancellationReason: reason,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to cancel date");
+      }
+      triggerToast("Session cancelled for this specific day. Recurring master rule remains active.");
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      triggerToast(err.message, true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
+      <Card className="w-full max-w-md border-rose-900/40 bg-slate-900 p-6 rounded-2xl space-y-4 animate-in zoom-in-95 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-rose-400" />
+            <h3 className="font-bold text-white text-lg">Cancel Single Day Schedule</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-slate-400 hover:text-white hover:bg-slate-800"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-2 text-xs">
+          <p className="text-slate-300">
+            You are cancelling the consultation session on{" "}
+            <strong className="text-white">{formatSlotDateLong(schedule.startsAt)}</strong> at{" "}
+            <strong className="text-teal-400">{schedule.hospital?.name || "Clinic"}</strong>.
+          </p>
+          <p className="text-slate-400 text-[11px]">
+            ⚠️ This will cancel all booked appointments for this date and close serial booking. Other scheduled days and the recurring master rule will remain unaffected.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <div>
+            <label className="block text-slate-300 font-medium mb-1">Reason for Cancellation</label>
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              required
+              placeholder="e.g. Doctor is out of station"
+              className="border-slate-800 bg-slate-950 text-slate-200"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="border-slate-800 text-slate-300"
+            >
+              Keep Active
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-rose-600 hover:bg-rose-500 text-white font-semibold gap-1.5"
+            >
+              {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              <span>Confirm Cancellation</span>
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
+  );
+}
+
+function SaveIcon(props: any) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+      <polyline points="17 21 17 13 7 13 7 21" />
+      <polyline points="7 3 7 8 15 8" />
+    </svg>
+  );
+}
+
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -725,6 +1762,7 @@ export function AdminPanel() {
 
   // State collections
   const [hospitals, setHospitals] = useState<HospitalRecord[]>([]);
+  const [scheduleRules, setScheduleRules] = useState<ChamberScheduleRuleRecord[]>([]);
   const [schedules, setSchedules] = useState<ScheduleRecord[]>([]);
   const [patients, setPatients] = useState<PatientRecord[]>([]);
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
@@ -743,6 +1781,20 @@ export function AdminPanel() {
     name: "Super Admin",
     role: "super_admin",
   });
+
+  // Schedule Rules & Occurrences View State
+  const [scheduleSubTab, setScheduleSubTab] = useState<"rules" | "occurrences">("rules");
+  const [isScheduleRuleModalOpen, setIsScheduleRuleModalOpen] = useState(false);
+  const [editingScheduleRule, setEditingScheduleRule] = useState<ChamberScheduleRuleRecord | null>(null);
+  const [isSyncingSchedules, setIsSyncingSchedules] = useState(false);
+  const [scheduleTypeFilter, setScheduleTypeFilter] = useState("all");
+  const [ruleSearch, setRuleSearch] = useState("");
+  const [ruleTypeFilter, setRuleTypeFilter] = useState("all");
+  const [ruleHospitalFilter, setRuleHospitalFilter] = useState("all");
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [reschedulingSchedule, setReschedulingSchedule] = useState<ScheduleRecord | null>(null);
+  const [isCancelOccurrenceModalOpen, setIsCancelOccurrenceModalOpen] = useState(false);
+  const [cancellingSchedule, setCancellingSchedule] = useState<ScheduleRecord | null>(null);
 
   // Super Admin Security & Credentials State
   const [securityForm, setSecurityForm] = useState({
@@ -851,6 +1903,7 @@ export function AdminPanel() {
     try {
       const [
         hospitalsRes,
+        scheduleRulesRes,
         schedulesRes,
         patientsRes,
         appointmentsRes,
@@ -868,6 +1921,9 @@ export function AdminPanel() {
         meRes,
       ] = await Promise.all([
         fetch("/api/admin/hospitals")
+          .then((r) => r.json())
+          .catch(() => ({ data: [] })),
+        fetch("/api/admin/schedule-rules")
           .then((r) => r.json())
           .catch(() => ({ data: [] })),
         fetch("/api/admin/schedules")
@@ -918,6 +1974,7 @@ export function AdminPanel() {
       ]);
 
       setHospitals(hospitalsRes.data || []);
+      setScheduleRules(scheduleRulesRes.data || []);
       setSchedules(schedulesRes.data || []);
       setPatients(patientsRes.data || []);
       setAppointments(appointmentsRes.data || []);
@@ -1008,6 +2065,56 @@ export function AdminPanel() {
         ),
       );
       triggerToast(`Appointment marked as ${status}`);
+    } catch (err: any) {
+      triggerToast(err.message, true);
+    }
+  };
+
+  const handleSyncSchedules = async () => {
+    setIsSyncingSchedules(true);
+    try {
+      const res = await fetch("/api/admin/schedules/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ daysAhead: 60 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Sync failed");
+      triggerToast(data.message || "Schedules synchronized successfully!");
+      await loadAllData();
+    } catch (err: any) {
+      triggerToast(err.message, true);
+    } finally {
+      setIsSyncingSchedules(false);
+    }
+  };
+
+  const handleToggleRuleActive = async (rule: ChamberScheduleRuleRecord) => {
+    try {
+      const newActive = !rule.active;
+      const res = await fetch(`/api/admin/schedule-rules/${recordId(rule)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: newActive }),
+      });
+      if (!res.ok) throw new Error("Failed to update rule status");
+      triggerToast(`Schedule rule is now ${newActive ? "Active" : "Inactive"}`);
+      loadAllData();
+    } catch (err: any) {
+      triggerToast(err.message, true);
+    }
+  };
+
+  const handleReactivateScheduleOccurrence = async (schedule: ScheduleRecord) => {
+    try {
+      const res = await fetch(`/api/admin/schedules/${recordId(schedule)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reactivate" }),
+      });
+      if (!res.ok) throw new Error("Failed to reactivate schedule");
+      triggerToast("Schedule session reactivated successfully!");
+      loadAllData();
     } catch (err: any) {
       triggerToast(err.message, true);
     }
@@ -1383,6 +2490,25 @@ export function AdminPanel() {
     appointmentStatusFilter,
   ]);
 
+  // Filtered Schedule Rules
+  const filteredScheduleRules = useMemo(() => {
+    return scheduleRules.filter((r) => {
+      const hospitalName = r.hospital?.name || "";
+      const matchSearch =
+        !ruleSearch ||
+        (r.title || "").toLowerCase().includes(ruleSearch.toLowerCase()) ||
+        hospitalName.toLowerCase().includes(ruleSearch.toLowerCase());
+
+      const matchType =
+        ruleTypeFilter === "all" || r.scheduleType === ruleTypeFilter;
+
+      const matchHospital =
+        ruleHospitalFilter === "all" || hospitalName === ruleHospitalFilter;
+
+      return matchSearch && matchType && matchHospital;
+    });
+  }, [scheduleRules, ruleSearch, ruleTypeFilter, ruleHospitalFilter]);
+
   // Filtered Schedules
   const filteredSchedules = useMemo(() => {
     return schedules.filter((s) => {
@@ -1400,9 +2526,20 @@ export function AdminPanel() {
         scheduleStatusFilter === "all" ||
         (s.scheduleStatus || "scheduled") === scheduleStatusFilter;
 
-      return matchSearch && matchHospital && matchStatus;
+      const matchType =
+        scheduleTypeFilter === "all" ||
+        (s.scheduleType || (s.isRecurring ? "weekly" : "custom")) ===
+          scheduleTypeFilter;
+
+      return matchSearch && matchHospital && matchStatus && matchType;
     });
-  }, [schedules, scheduleSearch, scheduleHospitalFilter, scheduleStatusFilter]);
+  }, [
+    schedules,
+    scheduleSearch,
+    scheduleHospitalFilter,
+    scheduleStatusFilter,
+    scheduleTypeFilter,
+  ]);
 
   // Filtered Hospitals
   const filteredHospitals = useMemo(() => {
@@ -2627,123 +3764,599 @@ export function AdminPanel() {
                 </div>
               )}
 
-              {/* ================= 4. SCHEDULES TAB ================= */}
+              {/* ================= 4. SCHEDULES & RECURRING RULES TAB ================= */}
               {activeTab === "schedules" && (
                 <div className="space-y-6">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  {/* Tab Header & Action Bar */}
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-800 pb-5">
                     <div>
-                      <h2 className="text-xl font-bold text-white">
-                        Hospital Schedules & Slots
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2.5">
+                        <CalendarClock className="h-6 w-6 text-teal-400" />
+                        <span>Chamber Schedules & Recurring Rules</span>
                       </h2>
-                      <p className="text-xs text-slate-400">
-                        Configure consultation schedules with automated slot
-                        time calculations
+                      <p className="text-xs text-slate-400 mt-1">
+                        Configure recurring weekly/monthly/daily chamber schedule patterns or manage single-day session overrides
                       </p>
                     </div>
 
-                    <Button
-                      onClick={() => {
-                        setEditingSchedule(null);
-                        setIsScheduleModalOpen(true);
-                      }}
-                      size="sm"
-                      className="bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white rounded-xl text-xs gap-1.5 font-semibold"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Create Schedule</span>
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredSchedules.map((sched) => (
-                      <Card
-                        key={recordId(sched)}
-                        className="border-slate-800 bg-slate-900/80 p-5 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all"
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        onClick={handleSyncSchedules}
+                        disabled={isSyncingSchedules}
+                        size="sm"
+                        variant="outline"
+                        className="border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs rounded-xl gap-1.5 font-medium"
                       >
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between">
-                            <Badge className="bg-teal-500/15 text-teal-300 border-teal-500/20 text-[10px]">
-                              {sched.hospital?.name || "Clinic"}
-                            </Badge>
-                            <Badge
-                              className={
-                                sched.scheduleStatus === "scheduled"
-                                  ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/20 text-[10px]"
-                                  : "bg-rose-500/15 text-rose-300 text-[10px]"
-                              }
-                            >
-                              {sched.scheduleStatus || "scheduled"}
-                            </Badge>
-                          </div>
+                        <RefreshCw className={`h-3.5 w-3.5 ${isSyncingSchedules ? "animate-spin text-teal-400" : "text-slate-400"}`} />
+                        <span>{isSyncingSchedules ? "Syncing..." : "Sync & Generate Occurrences"}</span>
+                      </Button>
 
-                          <h3 className="text-lg font-bold text-white">
-                            {sched.title}
-                          </h3>
+                      <Button
+                        onClick={() => {
+                          setEditingSchedule(null);
+                          setIsScheduleModalOpen(true);
+                        }}
+                        size="sm"
+                        variant="outline"
+                        className="border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs rounded-xl gap-1.5 font-medium"
+                      >
+                        <Plus className="h-3.5 w-3.5 text-slate-400" />
+                        <span>Manual Single Date</span>
+                      </Button>
 
-                          <div className="space-y-2 text-xs text-slate-300 pt-2 border-t border-slate-800">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-3.5 w-3.5 text-slate-500" />
-                              <span className="font-medium text-slate-200">
-                                {formatSlotDateLong(sched.startsAt)}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-3.5 w-3.5 text-slate-500" />
-                              <span>
-                                {formatSlotTimeRangeOnly(
-                                  sched.startsAt,
-                                  sched.endsAt,
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-slate-400 pt-1">
-                              <span>
-                                Slot Duration: {sched.slotDurationMinutes || 10}{" "}
-                                mins
-                              </span>
-                              <span className="text-emerald-400 font-bold">
-                                ৳{sched.fee || 1000}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-5 border-t border-slate-800/80 pt-4 flex items-center justify-between">
-                          <span className="text-[11px] text-slate-500">
-                            Slug: {sched.slug}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              onClick={() => {
-                                setEditingSchedule(sched);
-                                setIsScheduleModalOpen(true);
-                              }}
-                              size="sm"
-                              variant="outline"
-                              className="h-8 border-slate-700 bg-slate-800 text-slate-200 text-xs rounded-lg gap-1"
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                              <span>Edit</span>
-                            </Button>
-                            <Button
-                              onClick={() =>
-                                handleDeleteRecord(
-                                  "schedules",
-                                  recordId(sched),
-                                  sched.title || "Schedule",
-                                )
-                              }
-                              size="sm"
-                              variant="outline"
-                              className="h-8 w-8 p-0 border-slate-700 hover:bg-rose-950/40 text-rose-400 rounded-lg"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
+                      <Button
+                        onClick={() => {
+                          setEditingScheduleRule(null);
+                          setIsScheduleRuleModalOpen(true);
+                        }}
+                        size="sm"
+                        className="bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white rounded-xl text-xs gap-1.5 font-semibold shadow-lg shadow-teal-950/50"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        <span>Create Recurring Rule</span>
+                      </Button>
+                    </div>
                   </div>
+
+                  {/* Sub-tabs Navigation */}
+                  <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3">
+                    <button
+                      onClick={() => setScheduleSubTab("rules")}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        scheduleSubTab === "rules"
+                          ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-sm"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                      }`}
+                    >
+                      <CalendarClock className="h-4 w-4" />
+                      <span>Recurring Schedule Rules</span>
+                      <Badge className="bg-teal-500/30 text-teal-200 border-0 text-[10px] ml-1">
+                        {scheduleRules.length}
+                      </Badge>
+                    </button>
+
+                    <button
+                      onClick={() => setScheduleSubTab("occurrences")}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        scheduleSubTab === "occurrences"
+                          ? "bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-sm"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                      }`}
+                    >
+                      <Calendar className="h-4 w-4" />
+                      <span>Upcoming Chamber Schedules & Live Slots</span>
+                      <Badge className="bg-slate-800 text-slate-300 border-0 text-[10px] ml-1">
+                        {filteredSchedules.length}
+                      </Badge>
+                    </button>
+                  </div>
+
+                  {/* ================= VIEW A: RECURRING SCHEDULE RULES ================= */}
+                  {scheduleSubTab === "rules" && (
+                    <div className="space-y-5">
+                      {/* Rules Filters & Search */}
+                      <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-900/60 border border-slate-800 p-3 rounded-2xl">
+                        <div className="relative flex-1 w-full">
+                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                          <Input
+                            placeholder="Search recurring rules by chamber or title..."
+                            value={ruleSearch}
+                            onChange={(e) => setRuleSearch(e.target.value)}
+                            className="pl-9 border-slate-800 bg-slate-950 text-xs text-slate-200 w-full"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <select
+                            value={ruleTypeFilter}
+                            onChange={(e) => setRuleTypeFilter(e.target.value)}
+                            className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-200 focus:border-teal-500 focus:outline-none"
+                          >
+                            <option value="all">All Rule Types</option>
+                            <option value="weekly">Weekly Recurring</option>
+                            <option value="monthly">Monthly Recurring</option>
+                            <option value="daily">Daily Recurring</option>
+                            <option value="specific_date">Specific Date</option>
+                          </select>
+
+                          <select
+                            value={ruleHospitalFilter}
+                            onChange={(e) => setRuleHospitalFilter(e.target.value)}
+                            className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-200 focus:border-teal-500 focus:outline-none"
+                          >
+                            <option value="all">All Chambers</option>
+                            {hospitals.map((h) => (
+                              <option key={recordId(h)} value={h.name}>
+                                {h.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Rules Grid */}
+                      {filteredScheduleRules.length === 0 ? (
+                        <Card className="border-slate-800 bg-slate-900/60 p-12 text-center rounded-2xl">
+                          <CalendarClock className="mx-auto h-12 w-12 text-slate-600 mb-3" />
+                          <h3 className="text-lg font-bold text-white">No Recurring Rules Found</h3>
+                          <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 mb-4">
+                            Create your weekly, monthly, or daily recurring schedule rules to automatically generate upcoming chamber sessions.
+                          </p>
+                          <Button
+                            onClick={() => {
+                              setEditingScheduleRule(null);
+                              setIsScheduleRuleModalOpen(true);
+                            }}
+                            size="sm"
+                            className="bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs gap-1.5 font-semibold"
+                          >
+                            <Plus className="h-4 w-4" />
+                            <span>Create First Recurring Rule</span>
+                          </Button>
+                        </Card>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                          {filteredScheduleRules.map((rule) => {
+                            const occurrencesForThisRule = schedules.filter(
+                              (s) => s.ruleId === recordId(rule)
+                            );
+                            const activeOccurrences = occurrencesForThisRule.filter(
+                              (s) => s.scheduleStatus !== "cancelled"
+                            );
+
+                            return (
+                              <Card
+                                key={recordId(rule)}
+                                className="border-slate-800 bg-slate-900/80 p-5 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all shadow-md"
+                              >
+                                <div className="space-y-3.5">
+                                  {/* Header: Hospital + Status Switch */}
+                                  <div className="flex items-start justify-between gap-2">
+                                    <Badge className="bg-teal-500/15 text-teal-300 border-teal-500/30 text-[10px] truncate max-w-[200px]">
+                                      {rule.hospital?.name || "Chamber"}
+                                    </Badge>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleRuleActive(rule)}
+                                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border transition-all ${
+                                        rule.active
+                                          ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25"
+                                          : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700"
+                                      }`}
+                                    >
+                                      <span className={`size-1.5 rounded-full ${rule.active ? "bg-emerald-400 animate-pulse" : "bg-slate-500"}`} />
+                                      <span>{rule.active ? "Active Rule" : "Inactive"}</span>
+                                    </button>
+                                  </div>
+
+                                  {/* Title */}
+                                  <h3 className="text-base font-bold text-white leading-snug">
+                                    {rule.title}
+                                  </h3>
+
+                                  {/* Rule Type Banner & Pattern Details */}
+                                  <div className="rounded-xl border border-slate-800/90 bg-slate-950/70 p-3 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[11px] font-semibold text-slate-400">Rule Pattern:</span>
+                                      <Badge
+                                        className={
+                                          rule.scheduleType === "weekly"
+                                            ? "bg-teal-500/20 text-teal-300 border-teal-500/40 text-[10px] font-bold"
+                                            : rule.scheduleType === "monthly"
+                                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px] font-bold"
+                                            : rule.scheduleType === "daily"
+                                            ? "bg-sky-500/20 text-sky-300 border-sky-500/40 text-[10px] font-bold"
+                                            : "bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px] font-bold"
+                                        }
+                                      >
+                                        {rule.scheduleType === "weekly"
+                                          ? "Weekly Recurring"
+                                          : rule.scheduleType === "monthly"
+                                          ? "Monthly Recurring"
+                                          : rule.scheduleType === "daily"
+                                          ? "Daily Recurring"
+                                          : "Specific Date"}
+                                      </Badge>
+                                    </div>
+
+                                    {/* Pattern specifics */}
+                                    {rule.scheduleType === "weekly" && (
+                                      <div className="space-y-1">
+                                        <div className="flex flex-wrap gap-1 pt-0.5">
+                                          {(rule.daysOfWeek || []).map((day) => (
+                                            <span
+                                              key={day}
+                                              className="rounded-md bg-teal-500/20 border border-teal-500/40 px-2 py-0.5 text-[10px] font-bold text-teal-300 uppercase tracking-wide"
+                                            >
+                                              {day.slice(0, 3)}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {rule.scheduleType === "monthly" && (
+                                      <p className="text-xs text-emerald-300 font-bold flex items-center gap-1.5">
+                                        <CalendarCheck className="h-3.5 w-3.5 text-emerald-400" />
+                                        <span>
+                                          Every month on the <strong>{rule.dayOfMonth}{rule.dayOfMonth === 1 ? "st" : rule.dayOfMonth === 2 ? "nd" : rule.dayOfMonth === 3 ? "rd" : "th"} day</strong>
+                                        </span>
+                                      </p>
+                                    )}
+
+                                    {rule.scheduleType === "daily" && (
+                                      <p className="text-xs text-sky-300 font-semibold flex items-center gap-1.5">
+                                        <Clock className="h-3.5 w-3.5 text-sky-400" />
+                                        <span>Operates every day of the week</span>
+                                      </p>
+                                    )}
+
+                                    {rule.scheduleType === "specific_date" && (
+                                      <p className="text-xs text-amber-300 font-semibold flex items-center gap-1.5">
+                                        <CalendarClock className="h-3.5 w-3.5 text-amber-400" />
+                                        <span>Date: {formatSlotDateLong(rule.specificDate)}</span>
+                                      </p>
+                                    )}
+
+                                    {/* Time Range */}
+                                    <div className="flex items-center gap-1.5 text-xs text-slate-200 pt-1 border-t border-slate-800">
+                                      <Clock className="h-3.5 w-3.5 text-teal-400" />
+                                      <span className="font-bold text-white">
+                                        {format12Hour(rule.startTime)} – {format12Hour(rule.endTime)}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Stats row */}
+                                  <div className="grid grid-cols-3 gap-2 text-center text-[11px] pt-1">
+                                    <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-2">
+                                      <span className="block text-[10px] text-slate-500">Slot Time</span>
+                                      <span className="font-bold text-slate-300">{rule.slotDurationMinutes || 10}m</span>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-2">
+                                      <span className="block text-[10px] text-slate-500">Max Slots</span>
+                                      <span className="font-bold text-slate-300">{rule.maxAppointments || 20}</span>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-2">
+                                      <span className="block text-[10px] text-slate-500">Fee</span>
+                                      <span className="font-bold text-emerald-400">৳{rule.fee || 1000}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Footer Card Actions */}
+                                <div className="mt-5 border-t border-slate-800/80 pt-4 flex items-center justify-between">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setScheduleHospitalFilter(rule.hospital?.name || "all");
+                                      setScheduleSubTab("occurrences");
+                                    }}
+                                    className="text-[11px] text-teal-400 hover:text-teal-300 font-semibold underline flex items-center gap-1"
+                                  >
+                                    <span>{activeOccurrences.length} upcoming dates</span>
+                                    <ChevronRight className="h-3 w-3" />
+                                  </button>
+
+                                  <div className="flex items-center gap-1.5">
+                                    <Button
+                                      onClick={() => {
+                                        setEditingScheduleRule(rule);
+                                        setIsScheduleRuleModalOpen(true);
+                                      }}
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 border-slate-700 bg-slate-800 text-slate-200 text-xs rounded-lg gap-1"
+                                    >
+                                      <Edit className="h-3.5 w-3.5" />
+                                      <span>Edit</span>
+                                    </Button>
+
+                                    <Button
+                                      onClick={() =>
+                                        handleDeleteRecord(
+                                          "schedule-rules",
+                                          recordId(rule),
+                                          rule.title || "Recurring Rule"
+                                        )
+                                      }
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 w-8 p-0 border-slate-700 hover:bg-rose-950/40 text-rose-400 rounded-lg"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ================= VIEW B: UPCOMING GENERATED OCCURRENCES ================= */}
+                  {scheduleSubTab === "occurrences" && (
+                    <div className="space-y-5">
+                      {/* Occurrence Filters */}
+                      <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-900/60 border border-slate-800 p-3 rounded-2xl">
+                        <div className="relative flex-1 w-full">
+                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                          <Input
+                            placeholder="Search generated chamber dates..."
+                            value={scheduleSearch}
+                            onChange={(e) => setScheduleSearch(e.target.value)}
+                            className="pl-9 border-slate-800 bg-slate-950 text-xs text-slate-200 w-full"
+                          />
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                          <select
+                            value={scheduleHospitalFilter}
+                            onChange={(e) => setScheduleHospitalFilter(e.target.value)}
+                            className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-200 focus:border-teal-500 focus:outline-none"
+                          >
+                            <option value="all">All Chambers</option>
+                            {hospitals.map((h) => (
+                              <option key={recordId(h)} value={h.name}>
+                                {h.name}
+                              </option>
+                            ))}
+                          </select>
+
+                          <select
+                            value={scheduleStatusFilter}
+                            onChange={(e) => setScheduleStatusFilter(e.target.value)}
+                            className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-200 focus:border-teal-500 focus:outline-none"
+                          >
+                            <option value="all">All Statuses</option>
+                            <option value="scheduled">Scheduled (Active)</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="completed">Completed</option>
+                          </select>
+
+                          <select
+                            value={scheduleTypeFilter}
+                            onChange={(e) => setScheduleTypeFilter(e.target.value)}
+                            className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-200 focus:border-teal-500 focus:outline-none"
+                          >
+                            <option value="all">All Types</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="daily">Daily</option>
+                            <option value="specific_date">Specific Date</option>
+                            <option value="custom">Custom Single Date</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Occurrences Grid */}
+                      {filteredSchedules.length === 0 ? (
+                        <Card className="border-slate-800 bg-slate-900/60 p-12 text-center rounded-2xl">
+                          <Calendar className="mx-auto h-12 w-12 text-slate-600 mb-3" />
+                          <h3 className="text-lg font-bold text-white">No Upcoming Schedules Found</h3>
+                          <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 mb-4">
+                            Click &ldquo;Sync & Generate Occurrences&rdquo; to automatically populate upcoming dates from active recurring rules.
+                          </p>
+                          <Button
+                            onClick={handleSyncSchedules}
+                            disabled={isSyncingSchedules}
+                            size="sm"
+                            className="bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs gap-1.5 font-semibold"
+                          >
+                            <RefreshCw className={`h-3.5 w-3.5 ${isSyncingSchedules ? "animate-spin" : ""}`} />
+                            <span>Generate Upcoming Dates</span>
+                          </Button>
+                        </Card>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                          {filteredSchedules.map((sched) => {
+                            const isCancelled = sched.scheduleStatus === "cancelled";
+                            const isOverridden = sched.isCustomOverride;
+                            const startsDate = sched.startsAt ? new Date(sched.startsAt) : null;
+                            const dayName = startsDate
+                              ? startsDate.toLocaleDateString("en-US", { weekday: "long" })
+                              : "";
+
+                            return (
+                              <Card
+                                key={recordId(sched)}
+                                className={`border p-5 rounded-2xl flex flex-col justify-between transition-all ${
+                                  isCancelled
+                                    ? "border-rose-900/40 bg-rose-950/10 opacity-80"
+                                    : "border-slate-800 bg-slate-900/80 hover:border-slate-700 shadow-md"
+                                }`}
+                              >
+                                <div className="space-y-3">
+                                  {/* Badges row */}
+                                  <div className="flex items-start justify-between gap-1 flex-wrap">
+                                    <Badge className="bg-teal-500/15 text-teal-300 border-teal-500/20 text-[10px] truncate max-w-[180px]">
+                                      {sched.hospital?.name || "Clinic"}
+                                    </Badge>
+
+                                    <div className="flex items-center gap-1">
+                                      {isOverridden && (
+                                        <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[9px]">
+                                          Custom Override
+                                        </Badge>
+                                      )}
+                                      <Badge
+                                        className={
+                                          isCancelled
+                                            ? "bg-rose-500/20 text-rose-300 border-rose-500/40 text-[10px] font-bold"
+                                            : sched.scheduleStatus === "completed"
+                                            ? "bg-blue-500/20 text-blue-300 border-blue-500/40 text-[10px] font-bold"
+                                            : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-[10px] font-bold"
+                                        }
+                                      >
+                                        {sched.scheduleStatus || "scheduled"}
+                                      </Badge>
+                                    </div>
+                                  </div>
+
+                                  {/* Title & Origin Pattern */}
+                                  <div>
+                                    <h3 className={`text-base font-bold leading-snug ${isCancelled ? "line-through text-slate-400" : "text-white"}`}>
+                                      {sched.title}
+                                    </h3>
+                                    {sched.scheduleType && (
+                                      <span className="text-[10px] text-teal-400 font-medium capitalize">
+                                        Pattern: {sched.scheduleType.replace("_", " ")}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Date and Time info */}
+                                  <div className="space-y-2 text-xs text-slate-300 pt-2 border-t border-slate-800">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <Calendar className="h-3.5 w-3.5 text-teal-400" />
+                                        <span className="font-bold text-slate-100">
+                                          {formatSlotDateLong(sched.startsAt)}
+                                        </span>
+                                      </div>
+                                      <Badge className="bg-slate-800 text-slate-300 border-slate-700 text-[10px]">
+                                        {dayName}
+                                      </Badge>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-3.5 w-3.5 text-slate-500" />
+                                      <span className="font-semibold text-white">
+                                        {formatSlotTimeRangeOnly(sched.startsAt, sched.endsAt)}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-slate-400 pt-1">
+                                      <span>Slot: {sched.slotDurationMinutes || 10}m &bull; Max: {sched.maxAppointments || 20}</span>
+                                      <span className="text-emerald-400 font-bold">৳{sched.fee || 1000}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Cancellation reason banner if cancelled */}
+                                  {isCancelled && (
+                                    <div className="rounded-xl border border-rose-900/50 bg-rose-950/40 p-2.5 text-[11px] text-rose-300 space-y-0.5">
+                                      <span className="font-bold block">🚫 Cancelled Day Override</span>
+                                      <p>{sched.cancellationReason || "Session cancelled for this specific date."}</p>
+                                    </div>
+                                  )}
+
+                                  {/* Reschedule notes */}
+                                  {sched.rescheduleNotes && !isCancelled && (
+                                    <div className="rounded-xl border border-amber-900/40 bg-amber-950/30 p-2 text-[11px] text-amber-200">
+                                      📝 {sched.rescheduleNotes}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Actions per Occurrence */}
+                                <div className="mt-5 border-t border-slate-800/80 pt-4 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    {sched.slug ? (
+                                      <Link
+                                        href={`/schedules/${sched.slug}`}
+                                        target="_blank"
+                                        className="text-[11px] text-slate-400 hover:text-teal-300 flex items-center gap-1 font-mono transition-colors"
+                                      >
+                                        <span>/schedules/{sched.slug.slice(0, 16)}...</span>
+                                        <ExternalLink className="h-3 w-3" />
+                                      </Link>
+                                    ) : (
+                                      <span className="text-[11px] text-slate-500 font-mono">
+                                        /schedules/{recordId(sched).slice(0, 8)}...
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] text-slate-500">
+                                      Booked: {sched.bookedSlots?.length || 0}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center justify-between gap-1.5 pt-1">
+                                    {/* Cancel or Reactivate specific day */}
+                                    {isCancelled ? (
+                                      <Button
+                                        onClick={() => handleReactivateScheduleOccurrence(sched)}
+                                        size="sm"
+                                        className="h-8 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-lg gap-1 font-semibold"
+                                      >
+                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                        <span>Re-activate</span>
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        onClick={() => {
+                                          setCancellingSchedule(sched);
+                                          setIsCancelOccurrenceModalOpen(true);
+                                        }}
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 border-rose-900/50 bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 text-xs rounded-lg gap-1"
+                                      >
+                                        <AlertTriangle className="h-3.5 w-3.5" />
+                                        <span>Cancel Day</span>
+                                      </Button>
+                                    )}
+
+                                    <div className="flex items-center gap-1.5">
+                                      <Button
+                                        onClick={() => {
+                                          setReschedulingSchedule(sched);
+                                          setIsRescheduleModalOpen(true);
+                                        }}
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 border-slate-700 bg-slate-800 text-slate-200 text-xs rounded-lg gap-1"
+                                      >
+                                        <CalendarClock className="h-3.5 w-3.5 text-amber-400" />
+                                        <span>Reschedule</span>
+                                      </Button>
+
+                                      <Button
+                                        onClick={() =>
+                                          handleDeleteRecord(
+                                            "schedules",
+                                            recordId(sched),
+                                            sched.title || "Schedule"
+                                          )
+                                        }
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 w-8 p-0 border-slate-700 hover:bg-rose-950/40 text-rose-400 rounded-lg"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -7136,6 +8749,37 @@ export function AdminPanel() {
         onClose={() => setIsHospitalModalOpen(false)}
         editingHospital={editingHospital}
         mediaList={mediaList}
+        onSaved={loadAllData}
+        triggerToast={triggerToast}
+      />
+
+      {/* 1.5. Recurring Chamber Schedule Rule Modal */}
+      <ScheduleRuleModalDialog
+        isOpen={isScheduleRuleModalOpen}
+        onClose={() => {
+          setIsScheduleRuleModalOpen(false);
+          setEditingScheduleRule(null);
+        }}
+        editingRule={editingScheduleRule}
+        hospitals={hospitals}
+        onSaved={loadAllData}
+        triggerToast={triggerToast}
+      />
+
+      {/* 1.6. Reschedule / Override Single Day Occurrence Modal */}
+      <RescheduleOccurrenceModalDialog
+        isOpen={Boolean(reschedulingSchedule)}
+        onClose={() => setReschedulingSchedule(null)}
+        schedule={reschedulingSchedule}
+        onSaved={loadAllData}
+        triggerToast={triggerToast}
+      />
+
+      {/* 1.7. Cancel Single Day Occurrence Modal */}
+      <CancelOccurrenceModalDialog
+        isOpen={Boolean(cancellingSchedule)}
+        onClose={() => setCancellingSchedule(null)}
+        schedule={cancellingSchedule}
         onSaved={loadAllData}
         triggerToast={triggerToast}
       />

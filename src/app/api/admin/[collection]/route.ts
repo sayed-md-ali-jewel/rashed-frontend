@@ -138,6 +138,15 @@ export async function POST(
       return NextResponse.json({ data }, { status: 200 });
     }
 
+    if (
+      collection === "schedule-rules" ||
+      collection === "chamber-schedule-rules" ||
+      collection === "hospital-schedules"
+    ) {
+      const data = await ScheduleService.upsertScheduleRule(payload);
+      return NextResponse.json({ data }, { status: 201 });
+    }
+
     if (collection === "schedules") {
       const data = await ScheduleService.upsertSchedule(payload);
       return NextResponse.json({ data }, { status: 201 });

@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { Check, ChevronDown, Clock3 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
-import { generateSlots } from "@/lib/booking";
+import { generateSlots, isScheduleExpired } from "@/lib/booking";
 import type { Schedule, WebsiteSetting } from "@/lib/types";
 import { formatSlotRange12 } from "@/lib/utils";
 import { useLanguage } from "@/context/language-context";
@@ -275,20 +276,36 @@ export function AppointmentForm({
             </div>
           </div>
 
-          <Button
-            type="submit"
-            variant="gold"
-            size="lg"
-            disabled={loading || !selectedSlot}
-            className="w-full mt-3 h-14 rounded-full py-4 text-base font-extrabold gap-2.5 shadow-md hover:shadow-xl transition-all cursor-pointer"
-          >
-            {loading ? t("booking.processing") : t("booking.submitButton")}
-            <span className="grid size-6 place-items-center rounded-full bg-ink text-white">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-          </Button>
+          {isScheduleExpired(schedule) ? (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-50 p-5 text-center space-y-3 mt-3">
+              <p className="font-bold text-amber-950 text-sm">
+                ⚠️ {t("schedule.sessionExpired")}
+              </p>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                This chamber consultation session has passed. Please browse upcoming schedules to book an active slot.
+              </p>
+              <Link href="/#schedules" className="block">
+                <Button type="button" variant="gold" size="sm" className="w-full mt-1 font-bold">
+                  {t("schedule.bookNextSession")} &rarr;
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <Button
+              type="submit"
+              variant="gold"
+              size="lg"
+              disabled={loading || !selectedSlot}
+              className="w-full mt-3 h-14 rounded-full py-4 text-base font-extrabold gap-2.5 shadow-md hover:shadow-xl transition-all cursor-pointer"
+            >
+              {loading ? t("booking.processing") : t("booking.submitButton")}
+              <span className="grid size-6 place-items-center rounded-full bg-ink text-white">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            </Button>
+          )}
 
           {message ? (
             <Alert variant={state === "success" ? "success" : "error"} className="rounded-2xl mt-3">

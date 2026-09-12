@@ -57,7 +57,30 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   const payload = await request.json();
 
   try {
+    if (
+      collection === "schedule-rules" ||
+      collection === "chamber-schedule-rules" ||
+      collection === "hospital-schedules"
+    ) {
+      const data = await ScheduleService.upsertScheduleRule(payload, id);
+      if (!data) return NextResponse.json({ error: "Record not found" }, { status: 404 });
+      return NextResponse.json({ data });
+    }
+
     if (collection === "schedules") {
+      if (payload.action === "cancel" || payload.scheduleStatus === "cancelled") {
+        const data = await ScheduleService.cancelOccurrence(id, payload.cancellationReason || payload.reason);
+        return NextResponse.json({ data });
+      }
+      if (payload.action === "reactivate") {
+        const data = await ScheduleService.reactivateOccurrence(id);
+        return NextResponse.json({ data });
+      }
+      if (payload.action === "reschedule") {
+        const data = await ScheduleService.rescheduleOccurrence(id, payload);
+        return NextResponse.json({ data });
+      }
+
       const data = await ScheduleService.upsertSchedule(payload, id);
       if (!data) return NextResponse.json({ error: "Record not found" }, { status: 404 });
       return NextResponse.json({ data });
@@ -101,6 +124,14 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   }
 
   await connectMongo();
+
+  if (
+    collection === "schedule-rules" ||
+    collection === "chamber-schedule-rules" ||
+    collection === "hospital-schedules"
+  ) {
+    await ScheduleService.syncRuleOccurrences({ _id: id, active: false });
+  }
 
   const query = isValidObjectId(id) ? { _id: id } : { slug: id };
   const data = await config.model.findOneAndDelete(query);

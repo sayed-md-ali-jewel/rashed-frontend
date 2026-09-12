@@ -5,6 +5,7 @@ import {
   AppointmentModel,
   AwardModel,
   BlogPostModel,
+  ChamberScheduleRuleModel,
   DoctorModel,
   ExpenseModel,
   FaqModel,
@@ -22,6 +23,7 @@ import {
   TestimonialModel,
   WebsiteSettingModel
 } from "@/lib/models";
+import { ScheduleService } from "@/lib/services/schedule.service";
 
 export async function POST() {
   if (!hasMongoUri()) {
@@ -230,62 +232,59 @@ export async function POST() {
       hospitalDocs.push(doc);
     }
 
-    // 5. Schedules (Generate future dates so booking slots are active)
-    const now = new Date();
-    const futureDate1 = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
-    futureDate1.setHours(10, 0, 0, 0);
-    const futureDate1End = new Date(futureDate1.getTime() + 3 * 60 * 60 * 1000);
-
-    const futureDate2 = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
-    futureDate2.setHours(17, 0, 0, 0);
-    const futureDate2End = new Date(futureDate2.getTime() + 3 * 60 * 60 * 1000);
-
-    const futureDate3 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    futureDate3.setHours(9, 30, 0, 0);
-    const futureDate3End = new Date(futureDate3.getTime() + 3 * 60 * 60 * 1000);
-
-    const schedulesData = [
+    // 5. Chamber Schedule Rules (Weekly, Monthly, Daily) & Automated Occurrence Generation
+    const scheduleRulesData = [
       {
         title: "City Care Hospital Consultation",
-        slug: "city-care-hospital-consultation",
         hospitalId: hospitalDocs[0]._id,
         hospital: hospitalDocs[0],
-        startsAt: futureDate1,
-        endsAt: futureDate1End,
+        scheduleType: "weekly",
+        daysOfWeek: ["saturday", "monday", "wednesday"],
+        startTime: "16:00",
+        endTime: "19:00",
         slotDurationMinutes: 10,
         fee: 1000,
         maxAppointments: 18,
-        scheduleStatus: "scheduled"
+        active: true
       },
       {
-        title: "Green Life Clinic Consultation",
-        slug: "green-life-clinic-consultation",
+        title: "Green Life Clinic Monthly Specialist Session",
         hospitalId: hospitalDocs[1]._id,
         hospital: hospitalDocs[1],
-        startsAt: futureDate2,
-        endsAt: futureDate2End,
+        scheduleType: "monthly",
+        dayOfMonth: 13,
+        startTime: "11:00",
+        endTime: "13:00",
         slotDurationMinutes: 15,
         fee: 900,
         maxAppointments: 12,
-        scheduleStatus: "scheduled"
+        active: true
       },
       {
-        title: "Central Health Clinic Consultation",
-        slug: "central-health-clinic-consultation",
+        title: "Central Health Clinic Daily Chamber",
         hospitalId: hospitalDocs[2]._id,
         hospital: hospitalDocs[2],
-        startsAt: futureDate3,
-        endsAt: futureDate3End,
+        scheduleType: "daily",
+        startTime: "17:00",
+        endTime: "21:00",
         slotDurationMinutes: 10,
         fee: 1000,
-        maxAppointments: 18,
-        scheduleStatus: "scheduled"
+        maxAppointments: 24,
+        active: true
       }
     ];
 
-    for (const s of schedulesData) {
-      await ScheduleModel.findOneAndUpdate({ slug: s.slug }, s, { upsert: true, new: true });
+    for (const r of scheduleRulesData) {
+      const ruleDoc = await ChamberScheduleRuleModel.findOneAndUpdate(
+        { hospitalId: r.hospitalId, scheduleType: r.scheduleType },
+        r,
+        { upsert: true, new: true }
+      );
+      await ScheduleService.syncRuleOccurrences(ruleDoc, 60);
     }
+
+    // Ensure all active recurring rules are synced for the upcoming 60 days
+    await ScheduleService.ensureUpcomingSchedules(60);
 
     // 6. Testimonials
     await TestimonialModel.deleteMany({});

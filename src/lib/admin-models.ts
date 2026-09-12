@@ -5,6 +5,7 @@ import {
   AuditLogModel,
   AwardModel,
   BlogPostModel,
+  ChamberScheduleRuleModel,
   DoctorModel,
   ExpenseModel,
   FaqModel,
@@ -134,11 +135,25 @@ export const adminCollections: Record<string, AdminCollection> = {
     title: "Hospitals",
     category: "clinical"
   },
+  "schedule-rules": {
+    model: ChamberScheduleRuleModel,
+    defaultSort: { createdAt: -1 },
+    searchFields: ["title", "scheduleType", "hospital.name"],
+    title: "Chamber Schedule Rules",
+    category: "clinical"
+  },
+  "chamber-schedule-rules": {
+    model: ChamberScheduleRuleModel,
+    defaultSort: { createdAt: -1 },
+    searchFields: ["title", "scheduleType", "hospital.name"],
+    title: "Chamber Schedule Rules",
+    category: "clinical"
+  },
   "hospital-schedules": {
-    model: HospitalScheduleModel,
-    defaultSort: { dayOfWeek: 1, startTime: 1 },
-    searchFields: ["hospitalName", "dayOfWeek"],
-    title: "Hospital Weekly Schedules",
+    model: ChamberScheduleRuleModel,
+    defaultSort: { createdAt: -1 },
+    searchFields: ["title", "scheduleType", "hospital.name"],
+    title: "Hospital Schedule Rules",
     category: "clinical"
   },
   incomes: {

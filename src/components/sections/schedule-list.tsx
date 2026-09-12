@@ -1,10 +1,11 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarClock, MapPinned } from "lucide-react";
+import { CalendarClock, Clock, MapPinned, Sparkles } from "lucide-react";
 import type { Schedule, WebsiteSetting } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
-import { generateSlots, isUpcomingSchedule } from "@/lib/booking";
+import { generateSlots, getActiveOrNextSchedulesByChamber, isScheduleActive } from "@/lib/booking";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -19,8 +20,22 @@ export function ScheduleList({
   content: WebsiteSetting["content"];
 }) {
   const { t, translate, formatCurrency, language } = useLanguage();
-  const upcomingSchedules = schedules.filter(isUpcomingSchedule);
-  const displaySchedules = upcomingSchedules.length > 0 ? upcomingSchedules : schedules;
+  
+  // Real-time clock to automatically transition schedules when the active session expires
+  const [currentTime, setCurrentTime] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    // Tick every 10 seconds to detect session end times and seamlessly rotate to the next schedule
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Compute strictly the single current active or nearest upcoming schedule per chamber
+  const displaySchedules = useMemo(() => {
+    return getActiveOrNextSchedulesByChamber(schedules, currentTime);
+  }, [schedules, currentTime]);
 
   const badgeText = content?.scheduleBadge ? translate(content.scheduleBadge) : t("schedule.badge");
   const titleText = content?.scheduleTitle ? translate(content.scheduleTitle) : t("schedule.title");
@@ -58,6 +73,7 @@ export function ScheduleList({
 
         <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {displaySchedules.map((schedule) => {
+            const isActive = isScheduleActive(schedule, currentTime);
             const slots = generateSlots(schedule);
             const available = slots.filter((slot) => slot.available).length;
             const displayTitle = translate(schedule.title || schedule.hospital?.name) || "Consultation Schedule";
@@ -67,18 +83,30 @@ export function ScheduleList({
             return (
               <div
                 key={schedule.id}
-                className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-line bg-white transition hover:-translate-y-1 hover:shadow-lg duration-300"
+                className={`group flex flex-col justify-between overflow-hidden rounded-2xl border transition hover:-translate-y-1 hover:shadow-xl duration-300 ${
+                  isActive ? "border-emerald-500/40 bg-white ring-2 ring-emerald-500/20" : "border-line bg-white"
+                }`}
               >
                 <div className="p-6">
-                  <div className="flex items-center justify-between gap-4">
-                    <Badge variant={available > 0 ? "success" : "warning"}>
-                      {slots.length === 0
-                        ? t("schedule.openForVisit")
-                        : available > 0
-                        ? t("schedule.slotsAvailable", { count: available })
-                        : t("schedule.sessionFull")}
-                    </Badge>
-                    <span className="text-xs font-semibold text-blue">
+                  {/* Top Status Badges */}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    {isActive ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-700 animate-pulse">
+                        <span className="size-2 rounded-full bg-emerald-500" />
+                        {t("schedule.activeNow")}
+                      </span>
+                    ) : (
+                      <Badge variant={available > 0 ? "success" : "warning"}>
+                        {slots.length === 0
+                          ? t("schedule.openForVisit")
+                          : available > 0
+                          ? t("schedule.slotsAvailable", { count: available })
+                          : t("schedule.sessionFull")}
+                      </Badge>
+                    )}
+
+                    <span className="text-xs font-semibold text-blue flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
                       {t("schedule.slotInterval", { mins: schedule.slotDurationMinutes || 10 })}
                     </span>
                   </div>
@@ -94,8 +122,10 @@ export function ScheduleList({
                   </p>
 
                   <div className="mt-5 grid grid-cols-2 gap-2.5">
-                    <div className="rounded-xl border border-line bg-panel p-3">
-                      <span className="block text-[11px] font-semibold text-muted">{t("schedule.sessionDate")}</span>
+                    <div className={`rounded-xl border p-3 ${isActive ? "border-emerald-200 bg-emerald-50/50" : "border-line bg-panel"}`}>
+                      <span className="block text-[11px] font-semibold text-muted">
+                        {isActive ? t("schedule.activeNow") : t("schedule.sessionDate")}
+                      </span>
                       <span className="mt-1 block text-sm font-bold text-ink">
                         {formatLocalizedTime(formatDateTime(schedule.startsAt), language)}
                       </span>
@@ -123,8 +153,15 @@ export function ScheduleList({
                       : t("schedule.openQueue")}
                   </span>
                   <Link href={`/schedules/${schedule.slug}`}>
-                    <Button variant="gold" size="sm" className="gap-2">
-                      {content?.scheduleBookButton ? translate(content.scheduleBookButton) : t("schedule.selectSlot")}
+                    <Button variant={isActive ? "primary" : "gold"} size="sm" className="gap-2">
+                      {isActive ? (
+                        <>
+                          <Sparkles className="h-3.5 w-3.5" />
+                          <span>{t("schedule.selectSlot")}</span>
+                        </>
+                      ) : (
+                        content?.scheduleBookButton ? translate(content.scheduleBookButton) : t("schedule.selectSlot")
+                      )}
                       <span className="grid size-5 place-items-center rounded-full bg-ink">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
                           <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
