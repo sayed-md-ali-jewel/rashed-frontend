@@ -1,4 +1,4 @@
-import type { Doctor, GalleryItem, Hospital, Schedule, Testimonial, WebsiteSetting } from "./types";
+import type { BlogPost, Doctor, GalleryItem, Hospital, Schedule, Testimonial, WebsiteSetting } from "./types";
 
 export const doctor: Doctor = {
   name: "Dr. Md. Rashedul Alam",
@@ -329,3 +329,350 @@ export const websiteSetting: WebsiteSetting = {
     appointmentCancelledMessage: "Dear {patientName}, your appointment{dateText} has been cancelled. Please contact the clinic if you need a new booking."
   }
 };
+
+export const mockBlogPosts: BlogPost[] = [
+  {
+    id: "blog-post-1",
+    title: "Non-Surgical Interventions for Chronic Lower Back Pain: A Modern Clinical Protocol",
+    slug: "non-surgical-interventions-chronic-back-pain",
+    excerpt: "Discover evidence-based non-surgical strategies, rehabilitation protocols, and targeted interventional pain management for persistent lumbar spinal discomfort.",
+    category: "Spine & Pain Medicine",
+    tags: ["Lumbar Spine", "Pain Management", "Rehabilitation", "Non-Surgical"],
+    author: "Dr. Md. Rashedul Alam",
+    authorRole: "Physical Medicine & Rehabilitation Specialist",
+    authorAvatar: "/placeholder.svg",
+    coverImage: "/placeholder.svg",
+    status: "published",
+    publishedAt: "2026-03-10T10:00:00.000Z",
+    readingTimeMinutes: 6,
+    views: 1420,
+    seo: {
+      seoTitle: "Non-Surgical Lower Back Pain Management | Dr. Md. Rashedul Alam",
+      metaDescription: "Evidence-based non-surgical protocols and physical medicine solutions for chronic lower back pain and lumbar disc issues.",
+      focusKeyword: "Lower Back Pain",
+      canonicalUrl: "https://rashedulalam.com/blog/non-surgical-interventions-chronic-back-pain",
+      ogTitle: "Non-Surgical Interventions for Chronic Lower Back Pain",
+      ogDescription: "A comprehensive clinical protocol by Dr. Md. Rashedul Alam detailing non-surgical spine care.",
+      metaRobots: "index, follow"
+    },
+    contentBlocks: [
+      {
+        id: "b1",
+        type: "paragraph",
+        content: "Chronic lower back pain is one of the leading causes of global disability, impacting mobility, work productivity, and overall vitality. While many patients fear that spinal surgery is their only recourse, modern Physical Medicine and Rehabilitation (PMR) offers robust, non-operative pathways that restore biomechanical function and relieve neuropathic distress.",
+        order: 0
+      },
+      {
+        id: "b2",
+        type: "note",
+        content: "Early diagnostic assessment prevents structural degeneration. Conservative interventional management within the first 6–12 weeks of persistent symptoms yields the highest recovery rate.",
+        data: { variant: "info", title: "Clinical Key Insight" },
+        order: 1
+      },
+      {
+        id: "b3",
+        type: "h2",
+        content: "Understanding the Etiology of Chronic Lumbar Pain",
+        anchorId: "understanding-the-etiology-of-chronic-lumbar-pain",
+        order: 2
+      },
+      {
+        id: "b4",
+        type: "paragraph",
+        content: "The lumbar spine is a complex architectural matrix composed of vertebrae, intervertebral discs, facet joints, ligaments, and stabilizing muscle groups. Identifying the precise pain generator is essential before formulating a rehabilitation regimen.",
+        order: 3
+      },
+      {
+        id: "b5",
+        type: "h3",
+        content: "Common Mechanical and Neuropathic Drivers",
+        anchorId: "common-mechanical-and-neuropathic-drivers",
+        order: 4
+      },
+      {
+        id: "b6",
+        type: "unordered_list",
+        content: "",
+        data: {
+          items: [
+            "Lumbar disc herniation causing nerve root impingement (Sciatica)",
+            "Facet joint arthropathy secondary to age-related degenerative changes",
+            "Myofascial pain syndrome and chronic paraspinal muscle spasms",
+            "Sacroiliac joint dysfunction and pelvic misalignment"
+          ]
+        },
+        order: 5
+      },
+      {
+        id: "b7",
+        type: "quote",
+        content: "Effective spinal rehabilitation is not merely about suppressing pain; it is about retraining neuromuscular pathways and restoring functional kinetic chain stability.",
+        data: {
+          author: "Dr. Md. Rashedul Alam",
+          citation: "Clinical Protocol Manual, 2026",
+          style: "modern"
+        },
+        order: 6
+      },
+      {
+        id: "b8",
+        type: "h2",
+        content: "Multimodal Non-Surgical Treatment Modalities",
+        anchorId: "multimodal-non-surgical-treatment-modalities",
+        order: 7
+      },
+      {
+        id: "b9",
+        type: "paragraph",
+        content: "A tiered conservative intervention framework combines targeted pharmacological relief, image-guided procedures, and customized biomechanical exercise therapy.",
+        order: 8
+      },
+      {
+        id: "b10",
+        type: "table",
+        content: "",
+        data: {
+          headers: ["Phase", "Clinical Objective", "Primary Modality", "Expected Timeline"],
+          rows: [
+            ["Phase 1: Acute Relief", "Reduce nerve inflammation & spasm", "Targeted Injections / Medications", "1 - 2 Weeks"],
+            ["Phase 2: Mobility Restoration", "Restore lumbar range of motion", "Therapeutic Ultrasound / Gentle Mobilization", "2 - 4 Weeks"],
+            ["Phase 3: Core Stabilization", "Rebuild kinetic spinal stability", "McKenzie Protocol / Core Conditioning", "4 - 8 Weeks"],
+            ["Phase 4: Functional Maintenance", "Prevent recurrence & optimize posture", "Ergonomic Coaching & Home Regimen", "Ongoing"]
+          ]
+        },
+        order: 9
+      },
+      {
+        id: "b11",
+        type: "h3",
+        content: "Targeted Interventional Procedures",
+        anchorId: "targeted-interventional-procedures",
+        order: 10
+      },
+      {
+        id: "b12",
+        type: "paragraph",
+        content: "For patients suffering from acute radiculopathy or persistent facet pain, ultrasound or fluoroscopy-guided precision injections deliver anti-inflammatory agents directly to the pathological site, enabling immediate pain relief and facilitating faster physical therapy.",
+        order: 11
+      },
+      {
+        id: "b13",
+        type: "before_after",
+        content: "",
+        data: {
+          title: "Posture and Spinal Alignment Transformation",
+          beforeLabel: "Compromised Lumbar Lordosis",
+          afterLabel: "Corrected Biomechanical Posture",
+          beforeDescription: "Slouched workstation posture causing anterior disc compression and paraspinal fatigue.",
+          afterDescription: "Ergonomically supported posture with balanced kinetic alignment and relaxed shoulder girdle."
+        },
+        order: 12
+      },
+      {
+        id: "b14",
+        type: "h2",
+        content: "Frequently Asked Patient Questions",
+        anchorId: "frequently-asked-patient-questions",
+        order: 13
+      },
+      {
+        id: "b15",
+        type: "faq",
+        content: "",
+        data: {
+          faqs: [
+            {
+              question: "When should I consider surgery for lower back pain?",
+              answer: "Surgery is generally reserved for severe 'red flag' cases, such as progressive neurological deficits (foot drop, severe muscle weakness) or cauda equina syndrome with bowel/bladder dysfunction. Over 90% of uncomplicated cases resolve with conservative care."
+            },
+            {
+              question: "Is bed rest recommended during acute back pain flare-ups?",
+              answer: "Strict bed rest exceeding 24–48 hours is discouraged as it leads to muscle deconditioning and joint stiffness. Gentle walking and guided mobility exercises are proven to accelerate recovery."
+            },
+            {
+              question: "How long does spinal rehabilitation take?",
+              answer: "Most patients experience significant functional improvement within 4 to 6 weeks of consistent multimodal therapy and active adherence to home rehabilitation guidelines."
+            }
+          ]
+        },
+        order: 14
+      },
+      {
+        id: "b16",
+        type: "cta",
+        content: "",
+        data: {
+          title: "Suffering from Persistent Spine or Nerve Pain?",
+          description: "Schedule a comprehensive clinical consultation with Dr. Md. Rashedul Alam to develop your personalized non-surgical treatment plan.",
+          buttonText: "Book an Appointment",
+          buttonUrl: "/#schedules",
+          secondaryButtonText: "Call Clinic",
+          secondaryButtonUrl: "tel:+8801700000000"
+        },
+        order: 15
+      }
+    ]
+  },
+  {
+    id: "blog-post-2",
+    title: "Platelet-Rich Plasma (PRP) Therapy in Knee Osteoarthritis: Clinical Evidence & Recovery Timelines",
+    slug: "prp-therapy-knee-osteoarthritis-guide",
+    excerpt: "An in-depth exploration of autologous regenerative therapy, cartilage preservation protocols, and post-injection rehabilitation for degenerative joint disease.",
+    category: "Regenerative Medicine",
+    tags: ["PRP Therapy", "Osteoarthritis", "Joint Health", "Regenerative Care"],
+    author: "Dr. Md. Rashedul Alam",
+    authorRole: "Physical Medicine & Rehabilitation Specialist",
+    authorAvatar: "/placeholder.svg",
+    coverImage: "/placeholder.svg",
+    status: "published",
+    publishedAt: "2026-03-05T09:00:00.000Z",
+    readingTimeMinutes: 5,
+    views: 980,
+    seo: {
+      seoTitle: "PRP Therapy for Knee Osteoarthritis | Dr. Md. Rashedul Alam",
+      metaDescription: "Comprehensive guide to PRP regenerative therapy for knee osteoarthritis: indications, procedure steps, and recovery timeline.",
+      focusKeyword: "PRP Therapy Knee",
+      canonicalUrl: "https://rashedulalam.com/blog/prp-therapy-knee-osteoarthritis-guide",
+      metaRobots: "index, follow"
+    },
+    contentBlocks: [
+      {
+        id: "p2-b1",
+        type: "paragraph",
+        content: "Knee osteoarthritis (OA) affects millions globally, leading to chronic joint effusion, cartilage breakdown, and reduced ambulatory range. Platelet-Rich Plasma (PRP) therapy has emerged as a groundbreaking biological intervention that harnesses the body's own growth factors to modulate intra-articular inflammation and promote tissue repair.",
+        order: 0
+      },
+      {
+        id: "p2-b2",
+        type: "h2",
+        content: "Mechanism of Action in Articular Cartilage",
+        anchorId: "mechanism-of-action-in-articular-cartilage",
+        order: 1
+      },
+      {
+        id: "p2-b3",
+        type: "paragraph",
+        content: "Platelets contain alpha granules rich in transforming growth factor-beta (TGF-β), platelet-derived growth factor (PDGF), and vascular endothelial growth factor (VEGF). When injected into the synovial cavity, these bioactive proteins inhibit pro-inflammatory cytokines and stimulate chondrocyte metabolism.",
+        order: 2
+      },
+      {
+        id: "p2-b4",
+        type: "note",
+        content: "PRP therapy is most effective in Grade I to Grade III Kellgren-Lawrence osteoarthritis. For end-stage bone-on-bone arthritis (Grade IV), multidisciplinary surgical evaluation is recommended.",
+        data: { variant: "warning", title: "Patient Selection Criteria" },
+        order: 3
+      },
+      {
+        id: "p2-b5",
+        type: "h2",
+        content: "What to Expect During and After the Procedure",
+        anchorId: "what-to-expect-during-and-after-the-procedure",
+        order: 4
+      },
+      {
+        id: "p2-b6",
+        type: "ordered_list",
+        content: "",
+        data: {
+          items: [
+            "Venous blood collection (approx. 20–30 ml) in specialized sterile tubes",
+            "Centrifugation at calibrated speeds to isolate leukocyte-rich or leukocyte-poor plasma",
+            "Ultrasound-guided intra-articular injection into the knee joint capsule under sterile conditions",
+            "Post-injection rest for 24–48 hours followed by structured isometric rehabilitation"
+          ]
+        },
+        order: 5
+      },
+      {
+        id: "p2-b7",
+        type: "cta",
+        content: "",
+        data: {
+          title: "Explore Regenerative Treatment for Joint Pain",
+          description: "Consult with Dr. Md. Rashedul Alam to evaluate if PRP therapy is suitable for your joint condition.",
+          buttonText: "Schedule an Assessment",
+          buttonUrl: "/#schedules"
+        },
+        order: 6
+      }
+    ]
+  },
+  {
+    id: "blog-post-3",
+    title: "Post-Stroke Motor Rehabilitation: Neuroplasticity & Modern Recovery Strategies",
+    slug: "post-stroke-motor-rehabilitation-guide",
+    excerpt: "How targeted neuro-rehabilitation and repetitive task-oriented training maximize neuroplasticity and functional independence following cerebrovascular accidents.",
+    category: "Neuro-Rehabilitation",
+    tags: ["Stroke Rehab", "Neuroplasticity", "Motor Recovery", "Physical Therapy"],
+    author: "Dr. Md. Rashedul Alam",
+    authorRole: "Physical Medicine & Rehabilitation Specialist",
+    authorAvatar: "/placeholder.svg",
+    coverImage: "/placeholder.svg",
+    status: "published",
+    publishedAt: "2026-02-20T14:30:00.000Z",
+    readingTimeMinutes: 7,
+    views: 1850,
+    seo: {
+      seoTitle: "Post-Stroke Motor Rehabilitation Guide | Dr. Md. Rashedul Alam",
+      metaDescription: "Comprehensive neuro-rehabilitation protocols to stimulate neuroplasticity and restore motor function after a stroke.",
+      focusKeyword: "Stroke Rehabilitation",
+      canonicalUrl: "https://rashedulalam.com/blog/post-stroke-motor-rehabilitation-guide",
+      metaRobots: "index, follow"
+    },
+    contentBlocks: [
+      {
+        id: "p3-b1",
+        type: "paragraph",
+        content: "Following an ischemic or hemorrhagic stroke, motor impairment often challenges a patient's self-reliance. Neuroplasticity—the central nervous system's capacity to reorganize its neural connections in response to repetitive task-oriented stimulation—is the biological cornerstone of stroke recovery.",
+        order: 0
+      },
+      {
+        id: "p3-b2",
+        type: "h2",
+        content: "The Critical Time Window for Neuroplasticity",
+        anchorId: "the-critical-time-window-for-neuroplasticity",
+        order: 1
+      },
+      {
+        id: "p3-b3",
+        type: "paragraph",
+        content: "The initial 3 to 6 months post-stroke represent the period of greatest brain plasticity. Early, intense, and structured rehabilitation under the guidance of a physiatrist yields the most dramatic functional gains.",
+        order: 2
+      },
+      {
+        id: "p3-b4",
+        type: "h2",
+        content: "Key Pillars of Comprehensive Neuro-Rehabilitation",
+        anchorId: "key-pillars-of-comprehensive-neuro-rehabilitation",
+        order: 3
+      },
+      {
+        id: "p3-b5",
+        type: "unordered_list",
+        content: "",
+        data: {
+          items: [
+            "Constraint-Induced Movement Therapy (CIMT) for upper extremity paresis",
+            "Body-weight supported treadmill training for balance and gait re-education",
+            "Functional Electrical Stimulation (FES) for foot drop and muscle activation",
+            "Spasticity management via botulinum toxin injections and orthotic bracing"
+          ]
+        },
+        order: 4
+      },
+      {
+        id: "p3-b6",
+        type: "cta",
+        content: "",
+        data: {
+          title: "Expert Neuro-Rehabilitation Consultations",
+          description: "Connect with our clinical team for a comprehensive stroke rehabilitation evaluation.",
+          buttonText: "Request Consultation",
+          buttonUrl: "/#schedules"
+        },
+        order: 5
+      }
+    ]
+  }
+];
+

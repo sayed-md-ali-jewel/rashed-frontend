@@ -1,7 +1,9 @@
-import { gallery, doctor, mockHospitals, schedules, testimonials, websiteSetting } from "./mock-data";
+import { isValidObjectId } from "mongoose";
+import { gallery, doctor, mockBlogPosts, mockHospitals, schedules, testimonials, websiteSetting } from "./mock-data";
 import { connectMongo, hasMongoUri } from "./mongodb";
 import {
   AppointmentModel,
+  BlogPostModel,
   DoctorModel,
   GalleryItemModel,
   HospitalModel,
@@ -10,8 +12,9 @@ import {
   TestimonialModel,
   WebsiteSettingModel
 } from "./models";
+import { BlogService } from "./services/blog.service";
 import { ScheduleService } from "./services/schedule.service";
-import type { Doctor, GalleryItem, Hospital, Schedule, SEOFields, Testimonial, WebsiteSetting } from "./types";
+import type { BlogBlock, BlogPost, Doctor, GalleryItem, Hospital, Schedule, SEOFields, Testimonial, WebsiteSetting } from "./types";
 
 type MongoDocument = {
   _id?: unknown;
@@ -449,3 +452,159 @@ export async function getScheduleById(scheduleId: string): Promise<Schedule | nu
     return toPlainObject(fallback);
   }
 }
+
+export function mapBlogPost(item: MongoDocument): BlogPost {
+  const id = documentId(item);
+  const title = asString(item.title, "Untitled Article");
+  const slug = asString(item.slug, id);
+  const excerpt = asString(item.excerpt, "");
+  const content = asString(item.content, "");
+
+  let contentBlocks: BlogBlock[] = [];
+  if (Array.isArray(item.contentBlocks) && item.contentBlocks.length > 0) {
+    contentBlocks = item.contentBlocks.map((b: any, idx: number) => ({
+      id: asString(b.id, `b-${idx}`),
+      type: asString(b.type, "paragraph") as any,
+      content: asString(b.content, ""),
+      anchorId: asString(b.anchorId, undefined),
+      data: typeof b.data === "object" && b.data !== null ? b.data : undefined,
+      order: asNumber(b.order, idx)
+    }));
+  } else if (content) {
+    contentBlocks = BlogService.convertLegacyContentToBlocks(content);
+  }
+
+  const readingTimeMinutes = asNumber(
+    item.readingTimeMinutes,
+    contentBlocks.length > 0 ? BlogService.calculateReadingTime(contentBlocks) : BlogService.calculateReadingTime(content)
+  );
+
+  const fallbackSeo = BlogService.generateDefaultSEO({ title, excerpt, slug });
+
+  return {
+    id,
+    _id: id,
+    title,
+    slug,
+    excerpt,
+    content,
+    contentBlocks,
+    coverImage: asString(item.coverImage, undefined),
+    author: asString(item.author, doctor.name || "Dr. Md. Rashedul Alam"),
+    authorRole: asString(item.authorRole, "Physical Medicine & Rehabilitation Specialist"),
+    authorAvatar: asString(item.authorAvatar, undefined),
+    category: asString(item.category, "General Health"),
+    tags: asStringArray(item.tags, []),
+    status: (item.status === "draft" ? "draft" : "published") as "draft" | "published",
+    publishedAt: asDateString(item.publishedAt, asDateString(item.createdAt, new Date().toISOString())),
+    readingTimeMinutes,
+    views: asNumber(item.views, 0),
+    seo: {
+      ...mapSeo(item.seo, fallbackSeo),
+      focusKeyword: asString((item.seo as any)?.focusKeyword, fallbackSeo.focusKeyword),
+      metaRobots: (item.seo as any)?.metaRobots || "index, follow"
+    },
+    createdAt: asDateString(item.createdAt),
+    updatedAt: asDateString(item.updatedAt)
+  };
+}
+
+export async function getBlogPosts(options?: {
+  category?: string;
+  tag?: string;
+  search?: string;
+  limit?: number;
+  includeDrafts?: boolean;
+}): Promise<BlogPost[]> {
+  const { category, tag, search, limit = 50, includeDrafts = false } = options || {};
+
+  if (!hasMongoUri()) {
+    let posts = mockBlogPosts.filter((p) => includeDrafts || p.status === "published");
+    if (category && category !== "all") {
+      posts = posts.filter((p) => p.category?.toLowerCase() === category.toLowerCase());
+    }
+    if (tag && tag !== "all") {
+      posts = posts.filter((p) => p.tags?.some((t) => t.toLowerCase() === tag.toLowerCase()));
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      posts = posts.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.excerpt.toLowerCase().includes(q) ||
+          p.tags?.some((t) => t.toLowerCase().includes(q))
+      );
+    }
+    return toPlainObject(limit > 0 ? posts.slice(0, limit) : posts);
+  }
+
+  try {
+    await connectMongo();
+
+    const query: Record<string, any> = {};
+    if (!includeDrafts) {
+      query.status = "published";
+    }
+    if (category && category !== "all") {
+      query.category = category;
+    }
+    if (tag && tag !== "all") {
+      query.tags = tag;
+    }
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { excerpt: { $regex: search, $options: "i" } },
+        { tags: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    const items = await BlogPostModel.find(query)
+      .sort({ publishedAt: -1, createdAt: -1 })
+      .limit(limit)
+      .lean<MongoDocument[]>();
+
+    if (!items || items.length === 0) {
+      let fallbackPosts = mockBlogPosts.filter((p) => includeDrafts || p.status === "published");
+      if (category && category !== "all") {
+        fallbackPosts = fallbackPosts.filter((p) => p.category?.toLowerCase() === category.toLowerCase());
+      }
+      if (tag && tag !== "all") {
+        fallbackPosts = fallbackPosts.filter((p) => p.tags?.some((t) => t.toLowerCase() === tag.toLowerCase()));
+      }
+      return toPlainObject(limit > 0 ? fallbackPosts.slice(0, limit) : fallbackPosts);
+    }
+
+    return toPlainObject(items.map(mapBlogPost));
+  } catch {
+    return toPlainObject(mockBlogPosts.filter((p) => includeDrafts || p.status === "published"));
+  }
+}
+
+export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
+  const fallback = mockBlogPosts.find((p) => p.slug === slug || p.id === slug) ?? null;
+
+  if (!hasMongoUri()) {
+    return toPlainObject(fallback);
+  }
+
+  try {
+    await connectMongo();
+
+    const queryConditions: any[] = [{ slug }];
+    if (isValidObjectId(slug)) {
+      queryConditions.push({ _id: slug });
+    }
+
+    const item = await BlogPostModel.findOne({ $or: queryConditions }).lean<MongoDocument | null>();
+
+    if (!item) {
+      return toPlainObject(fallback);
+    }
+
+    return toPlainObject(mapBlogPost(item));
+  } catch {
+    return toPlainObject(fallback);
+  }
+}
+

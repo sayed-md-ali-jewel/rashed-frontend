@@ -83,6 +83,7 @@ import {
   FileUploadInput,
   type MediaAsset,
 } from "@/components/ui/file-upload-input";
+import { BlogPostModalDialog } from "./blog/blog-post-modal";
 import {
   SweetAlertModal,
   type SweetAlertConfig,
@@ -6301,7 +6302,7 @@ export function AdminPanel() {
                     {blogPosts.map((post) => (
                       <Card
                         key={recordId(post)}
-                        className="border-slate-800 bg-slate-900/80 p-5 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all"
+                        className="border-slate-800 bg-slate-900/80 p-5 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all shadow-md"
                       >
                         <div className="space-y-3">
                           {post.coverImage && (
@@ -6317,34 +6318,52 @@ export function AdminPanel() {
                             </div>
                           )}
 
-                          <div className="flex items-center justify-between">
-                            <Badge
-                              className={
-                                post.status === "published"
-                                  ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/20 text-[10px]"
-                                  : "bg-amber-500/15 text-amber-300 text-[10px]"
-                              }
-                            >
-                              {post.status || "published"}
-                            </Badge>
-                            <span className="text-[11px] text-slate-400">
-                              {post.author || "Dr. Rashed"}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <Badge
+                                className={
+                                  post.status === "published"
+                                    ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/20 text-[10px]"
+                                    : "bg-amber-500/15 text-amber-300 text-[10px]"
+                                }
+                              >
+                                {post.status || "published"}
+                              </Badge>
+                              {(post as any).category && (
+                                <Badge className="bg-teal-500/15 text-teal-300 border-teal-500/30 text-[10px]">
+                                  {(post as any).category}
+                                </Badge>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-slate-400 font-mono">
+                              {(post as any).readingTimeMinutes || 3} min read
                             </span>
                           </div>
 
                           <h3 className="text-base font-bold text-white leading-snug">
                             {post.title}
                           </h3>
-                          <p className="text-xs text-slate-400 line-clamp-3">
+                          <p className="text-xs text-slate-400 line-clamp-2">
                             {post.excerpt || post.content}
                           </p>
                         </div>
 
-                        <div className="mt-5 border-t border-slate-800/80 pt-4 flex items-center justify-between">
-                          <span className="text-[11px] text-slate-500">
-                            /{post.slug}
-                          </span>
-                          <div className="flex items-center gap-2">
+                        <div className="mt-5 border-t border-slate-800/80 pt-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Link
+                              href={`/blog/${post.slug}`}
+                              target="_blank"
+                              className="text-[11px] text-slate-400 hover:text-teal-300 flex items-center gap-1 font-mono transition-colors"
+                            >
+                              <span>/blog/{post.slug}</span>
+                              <ExternalLink className="h-3 w-3" />
+                            </Link>
+                            <span className="text-[10px] text-slate-500">
+                              {(post as any).contentBlocks?.length || 1} blocks
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 pt-1">
                             <Button
                               onClick={() => {
                                 setEditingBlog(post);
@@ -6355,7 +6374,7 @@ export function AdminPanel() {
                               className="h-8 border-slate-700 bg-slate-800 text-slate-200 text-xs rounded-lg gap-1"
                             >
                               <Edit className="h-3.5 w-3.5" />
-                              <span>Edit</span>
+                              <span>Edit Block Content & SEO</span>
                             </Button>
                             <Button
                               onClick={() =>
@@ -8996,193 +9015,17 @@ export function AdminPanel() {
       )}
 
       {/* 3. Add / Edit Blog Post Modal */}
-      {isBlogModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-          <Card className="w-full max-w-xl border-slate-800 bg-slate-900 p-6 rounded-2xl space-y-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-white text-lg">
-                {Boolean(editingBlog && recordId(editingBlog))
-                  ? "Edit Article"
-                  : "Write New Article"}
-              </h3>
-              <button
-                onClick={() => setIsBlogModalOpen(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.currentTarget;
-                const title = (
-                  form.elements.namedItem("title") as HTMLInputElement
-                ).value;
-                const slug =
-                  (form.elements.namedItem("slug") as HTMLInputElement).value ||
-                  slugify(title);
-                const excerpt = (
-                  form.elements.namedItem("excerpt") as HTMLInputElement
-                ).value;
-                const content = (
-                  form.elements.namedItem("content") as HTMLTextAreaElement
-                ).value;
-                const author =
-                  (form.elements.namedItem("author") as HTMLInputElement)
-                    .value || "Dr. Md. Rashedul Alam";
-                const status = (
-                  form.elements.namedItem("status") as HTMLSelectElement
-                ).value;
-                const coverImage = editingBlog?.coverImage || "";
-
-                try {
-                  const isEdit = Boolean(editingBlog && recordId(editingBlog));
-                  const url = isEdit
-                    ? `/api/admin/blog-posts/${recordId(editingBlog)}`
-                    : "/api/admin/blog-posts";
-                  const method = isEdit ? "PATCH" : "POST";
-                  const res = await fetch(url, {
-                    method,
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      title,
-                      slug,
-                      excerpt,
-                      content,
-                      author,
-                      status,
-                      coverImage,
-                    }),
-                  });
-                  if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    throw new Error(errData.error || "Operation failed");
-                  }
-                  triggerToast(
-                    isEdit
-                      ? "Article updated successfully!"
-                      : "Article published successfully!",
-                  );
-                  setIsBlogModalOpen(false);
-                  loadAllData();
-                } catch (err: any) {
-                  triggerToast(err.message, true);
-                }
-              }}
-              className="space-y-3 text-xs"
-            >
-              <div>
-                <label className="block text-slate-400 mb-1">
-                  Article Title
-                </label>
-                <Input
-                  name="title"
-                  defaultValue={editingBlog?.title || ""}
-                  required
-                  className="border-slate-800 bg-slate-950 text-slate-200"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">URL Slug</label>
-                  <Input
-                    name="slug"
-                    defaultValue={editingBlog?.slug || ""}
-                    placeholder="auto-generated-from-title"
-                    className="border-slate-800 bg-slate-950 text-slate-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">
-                    Author Name
-                  </label>
-                  <Input
-                    name="author"
-                    defaultValue={
-                      editingBlog?.author || "Dr. Md. Rashedul Alam"
-                    }
-                    className="border-slate-800 bg-slate-950 text-slate-200"
-                  />
-                </div>
-              </div>
-
-              {/* Cover Image File Upload Input */}
-              <FileUploadInput
-                label="Article Cover Image"
-                value={editingBlog?.coverImage || ""}
-                onChange={(url) =>
-                  setEditingBlog((prev) => ({
-                    ...(prev || {}),
-                    coverImage: url,
-                  }))
-                }
-                mediaList={mediaList}
-                placeholder="Upload cover image or enter URL..."
-              />
-
-              <div>
-                <label className="block text-slate-400 mb-1">
-                  Summary / Excerpt
-                </label>
-                <Input
-                  name="excerpt"
-                  defaultValue={editingBlog?.excerpt || ""}
-                  placeholder="Short summary for preview cards..."
-                  className="border-slate-800 bg-slate-950 text-slate-200"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">
-                  Full Article Content (Markdown or Text)
-                </label>
-                <textarea
-                  name="content"
-                  rows={6}
-                  defaultValue={editingBlog?.content || ""}
-                  required
-                  placeholder="Write full article here..."
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 focus:outline-none focus:border-teal-500 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">
-                  Publish Status
-                </label>
-                <select
-                  name="status"
-                  defaultValue={editingBlog?.status || "published"}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 p-2.5 text-xs text-slate-200"
-                >
-                  <option value="published">Published</option>
-                  <option value="draft">Draft</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsBlogModalOpen(false)}
-                  className="border-slate-800 text-slate-300"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-teal-600 hover:bg-teal-500 text-white font-semibold"
-                >
-                  Save Article
-                </Button>
-              </div>
-            </form>
-          </Card>
-        </div>
-      )}
+      <BlogPostModalDialog
+        isOpen={isBlogModalOpen}
+        onClose={() => {
+          setIsBlogModalOpen(false);
+          setEditingBlog(null);
+        }}
+        editingBlog={editingBlog}
+        mediaList={mediaList}
+        onSaved={loadAllData}
+        triggerToast={triggerToast}
+      />
 
       {/* 4. Add / Edit Service Modal */}
       {isServiceModalOpen && (

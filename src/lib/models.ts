@@ -610,23 +610,42 @@ const ExpenseSchema = new Schema(
   { timestamps: true }
 );
 
-// 28. Blog Post Model
+// 28. Blog Post Model & Content Blocks
+const BlogBlockSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    type: { type: String, required: true },
+    content: { type: String, default: "" },
+    anchorId: { type: String, default: "" },
+    data: { type: Schema.Types.Mixed, default: () => ({}) },
+    order: { type: Number, default: 0 }
+  },
+  { _id: false }
+);
+
 const BlogPostSchema = new Schema(
   {
-    title: { type: String, required: true },
-    slug: { type: String, required: true, unique: true, index: true },
-    excerpt: { type: String, default: "" },
-    content: { type: String, required: true },
+    title: { type: String, required: true, trim: true },
+    slug: { type: String, required: true, unique: true, index: true, trim: true },
+    excerpt: { type: String, default: "", trim: true },
+    content: { type: String, default: "" }, // Legacy fallback
+    contentBlocks: { type: [BlogBlockSchema], default: () => [] },
     coverImage: { type: String, default: "" },
     author: { type: String, default: "Dr. Md. Rashedul Alam" },
+    authorRole: { type: String, default: "Physical Medicine & Rehabilitation Specialist" },
+    authorAvatar: { type: String, default: "" },
+    category: { type: String, default: "General Health", index: true },
     tags: [{ type: String }],
     status: {
       type: String,
       enum: ["draft", "published"],
-      default: "published"
+      default: "published",
+      index: true
     },
+    readingTimeMinutes: { type: Number, default: 3 },
+    views: { type: Number, default: 0 },
     seo: { type: SeoSchema, default: () => ({}) },
-    publishedAt: { type: Date, default: Date.now }
+    publishedAt: { type: Date, default: Date.now, index: true }
   },
   { timestamps: true }
 );

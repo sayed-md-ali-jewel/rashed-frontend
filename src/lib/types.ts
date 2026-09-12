@@ -252,3 +252,67 @@ export type WebsiteSetting = {
     appointmentCancelledMessage: string;
   };
 };
+
+export type BlogBlockType =
+  | "h1"
+  | "h2"
+  | "h3"
+  | "h4"
+  | "h5"
+  | "h6"
+  | "paragraph"
+  | "unordered_list"
+  | "ordered_list"
+  | "quote"
+  | "note"
+  | "image"
+  | "link"
+  | "divider"
+  | "cta"
+  | "before_after"
+  | "faq"
+  | "table"
+  | "custom_spacing";
+
+export type BlogBlock = {
+  id: string;
+  type: BlogBlockType;
+  content: string;
+  anchorId?: string;
+  data?: Record<string, any>;
+  order?: number;
+};
+
+export type BlogTOCItem = {
+  id: string;
+  text: string;
+  level: 2 | 3;
+  indexNumber: string; // e.g. "01", "02"
+  children?: BlogTOCItem[];
+};
+
+export type BlogPost = {
+  id: string;
+  _id?: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content?: string; // Legacy HTML fallback
+  contentBlocks: BlogBlock[];
+  coverImage?: string;
+  author: string;
+  authorRole?: string;
+  authorAvatar?: string;
+  category?: string;
+  tags?: string[];
+  status: "draft" | "published";
+  publishedAt?: string;
+  readingTimeMinutes?: number;
+  views?: number;
+  seo?: SEOFields & {
+    focusKeyword?: string;
+    metaRobots?: "index, follow" | "noindex, follow" | "noindex, nofollow";
+  };
+  createdAt?: string;
+  updatedAt?: string;
+};

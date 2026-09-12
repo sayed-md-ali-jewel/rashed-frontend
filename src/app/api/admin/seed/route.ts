@@ -435,7 +435,13 @@ export async function POST() {
         { upsert: true, new: true }
       );
     }
-
+    // 12. Blog Posts with Rich Content Blocks
+    await BlogPostModel.deleteMany({});
+    const { mockBlogPosts } = await import("@/lib/mock-data");
+    await BlogPostModel.insertMany(mockBlogPosts.map((post) => ({
+      ...post,
+      _id: undefined
+    })));
     return NextResponse.json({ success: true, message: "Database seeded successfully!" });
   } catch (error) {
     return NextResponse.json(

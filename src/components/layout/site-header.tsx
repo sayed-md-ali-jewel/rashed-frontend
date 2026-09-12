@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  BookOpen,
   CalendarDays,
   HeartPulse,
   Home,
@@ -25,6 +26,7 @@ const navConfig = [
   { href: "/#schedules", key: "nav.schedules", icon: CalendarDays },
   { href: "/#profile", key: "nav.about", icon: UserRound },
   { href: "/#services", key: "nav.services", icon: Activity },
+  { href: "/blog", key: "nav.blog", icon: BookOpen },
   { href: "/#reviews", key: "nav.reviews", icon: Star },
   { href: "/#contact", key: "nav.contact", icon: HeartPulse },
 ] as const;

@@ -10,6 +10,7 @@ export const translations = {
     "nav.schedules": "Schedules",
     "nav.about": "About",
     "nav.services": "Services",
+    "nav.blog": "Blog",
     "nav.reviews": "Reviews",
     "nav.contact": "Contact",
     "nav.patientPortal": "Patient Portal",
@@ -136,6 +137,7 @@ export const translations = {
     "footer.schedules": "Consultation Schedules",
     "footer.about": "About Doctor",
     "footer.services": "Medical Services",
+    "footer.blog": "Medical Blog",
     "footer.reviews": "Patient Reviews",
     "footer.gallery": "Chamber Gallery",
 
@@ -270,6 +272,7 @@ export const translations = {
     "nav.schedules": "শিডিউল",
     "nav.about": "পরিচিতি",
     "nav.services": "সেবাসমূহ",
+    "nav.blog": "ব্লগ",
     "nav.reviews": "মতামত",
     "nav.contact": "যোগাযোগ",
     "nav.patientPortal": "পেশেন্ট পোর্টাল",
@@ -396,6 +399,7 @@ export const translations = {
     "footer.schedules": "পরামর্শ শিডিউল",
     "footer.about": "চিকিৎসক পরিচিতি",
     "footer.services": "চিকিৎসা সেবা",
+    "footer.blog": "মেডিকেল ব্লগ",
     "footer.reviews": "রোগীদের রিভিউ",
     "footer.gallery": "চেম্বার গ্যালারি",
 

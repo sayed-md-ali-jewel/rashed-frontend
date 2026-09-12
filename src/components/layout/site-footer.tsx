@@ -20,6 +20,7 @@ const navLinksConfig = [
   { key: "footer.schedules", href: "/#schedules" },
   { key: "footer.about", href: "/#profile" },
   { key: "footer.services", href: "/#services" },
+  { key: "footer.blog", href: "/blog" },
   { key: "footer.reviews", href: "/#reviews" },
   { key: "footer.gallery", href: "/#gallery" },
 ] as const;

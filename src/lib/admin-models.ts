@@ -79,6 +79,20 @@ export const adminCollections: Record<string, AdminCollection> = {
     title: "Blog Posts",
     category: "cms"
   },
+  blogs: {
+    model: BlogPostModel,
+    defaultSort: { publishedAt: -1, createdAt: -1 },
+    searchFields: ["title", "slug", "excerpt", "content", "author"],
+    title: "Blog Posts",
+    category: "cms"
+  },
+  blog: {
+    model: BlogPostModel,
+    defaultSort: { publishedAt: -1, createdAt: -1 },
+    searchFields: ["title", "slug", "excerpt", "content", "author"],
+    title: "Blog Posts",
+    category: "cms"
+  },
   doctor: {
     model: DoctorModel,
     defaultSort: { updatedAt: -1 },
