@@ -122,22 +122,35 @@ jobs:
           echo "NORMALIZED_SERVER_DIR=${FINAL_DIR}" >> "$GITHUB_ENV"
           echo "Normalized FTP target directory to: ${FINAL_DIR}"
 
-      - name: Upload to Webuzo by FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ env.FTP_SERVER }}
-          username: ${{ env.FTP_USERNAME }}
-          password: ${{ env.FTP_PASSWORD }}
-          protocol: ${{ env.FTP_PROTOCOL }}
-          port: ${{ env.FTP_PORT }}
-          local-dir: ./deploy/
-          server-dir: ${{ env.NORMALIZED_SERVER_DIR }}
-          # Use a clean v2 state file to avoid trying to delete legacy /_next directories
-          state-name: .ftp-deploy-sync-state-v2.json
-          dangerous-clean-slate: ${{ github.event.inputs.clean_slate == 'true' || github.event.inputs.clean_slate == true }}
-          log-level: verbose
-          exclude: |
-            **/.git*
-            **/.git*/**
-            public/uploads/**
-            .ftp-deploy-sync-state.json
+      - name: Upload to Webuzo by LFTP
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+          PROTOCOL="${FTP_PROTOCOL:-ftp}"
+          PORT="${FTP_PORT:-21}"
+
+          if [ "$PROTOCOL" = "ftps" ]; then
+            SSL_CMDS="set ftp:ssl-force true; set ftp:ssl-protect-data true;"
+          else
+            SSL_CMDS="set ftp:ssl-allow yes;"
+          fi
+
+          echo "Starting LFTP sync to ${FTP_SERVER}:${PORT} at ${NORMALIZED_SERVER_DIR}..."
+
+          lftp << EOF
+          set ssl:verify-certificate no
+          set ftp:passive-mode true
+          set net:timeout 30
+          set net:max-retries 5
+          set net:reconnect-interval-base 5
+          ${SSL_CMDS}
+          open -u "${FTP_USERNAME}","${FTP_PASSWORD}" -p ${PORT} "${FTP_SERVER}"
+          mirror -R --delete --parallel=5 \
+            --exclude-glob .git* \
+            --exclude-glob .git*/** \
+            --exclude-glob public/uploads/** \
+            --exclude-glob uploads/** \
+            --exclude-glob .ftp-deploy-sync-state* \
+            deploy/ "${NORMALIZED_SERVER_DIR}"
+          quit
+          EOF
