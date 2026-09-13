@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
   const patient = getPatientFromCookie(request);
   const { searchParams } = new URL(request.url);
   const conversationId = searchParams.get("conversationId");
+  const requestedViewer = searchParams.get("viewer"); // "doctor" | "patient"
 
   if (!conversationId) {
     return NextResponse.json({ error: "conversationId is required" }, { status: 400 });
@@ -53,7 +54,15 @@ export async function GET(request: NextRequest) {
       .lean();
 
     // Mark messages as read by recipient
-    const viewerType = isDocAdmin ? "doctor" : "patient";
+    let viewerType: "doctor" | "patient";
+    if (requestedViewer === "doctor" && isDocAdmin) {
+      viewerType = "doctor";
+    } else if (requestedViewer === "patient") {
+      viewerType = "patient";
+    } else {
+      viewerType = isDocAdmin ? "doctor" : "patient";
+    }
+
     const unreadMessages = messages.filter(
       (m: any) => m.senderType !== viewerType && m.status !== "read"
     );
@@ -105,7 +114,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { conversationId, message, attachments } = body;
+    const { conversationId, message, attachments, senderType: reqSenderType, senderName: reqSenderName } = body;
 
     if (!conversationId || (!message?.trim() && (!attachments || attachments.length === 0))) {
       return NextResponse.json(
@@ -124,8 +133,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Determine sender type
+    let senderType: "doctor" | "patient";
+    if (reqSenderType === "doctor") {
+      if (!isDocAdmin) {
+        return NextResponse.json({ error: "Unauthorized to send as doctor" }, { status: 403 });
+      }
+      senderType = "doctor";
+    } else if (reqSenderType === "patient") {
+      senderType = "patient";
+    } else {
+      senderType = isDocAdmin ? "doctor" : "patient";
+    }
+
     // Check if patient messaging is disabled
-    if (!isDocAdmin) {
+    if (senderType === "patient") {
       const setting = await WebsiteSettingModel.findOne().lean<any>();
       if (setting && setting.enablePatientChat === false) {
         return NextResponse.json(
@@ -157,11 +179,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Conversation is ACTIVE -> proceed
-    const senderType = isDocAdmin ? "doctor" : "patient";
-    const senderName = isDocAdmin
-      ? conversation.doctorName || "Dr. Md. Rashedul Alam"
-      : conversation.patientName || "Patient";
-    const senderId = isDocAdmin ? "doctor_admin" : (patient?.mobileNumber || "patient");
+    const senderName = senderType === "doctor"
+      ? (conversation.doctorName || "Dr. Md. Rashedul Alam")
+      : (reqSenderName || conversation.patientName || "Patient");
+    const senderId = senderType === "doctor"
+      ? "doctor_admin"
+      : (conversation.patientPhone || patient?.mobileNumber || "patient");
 
     const newMessage = await MessageModel.create({
       conversationId: conversation._id,

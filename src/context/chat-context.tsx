@@ -402,7 +402,7 @@ export function ChatProvider({
     if (!conversationId) return;
     setLoadingMessages(true);
     try {
-      const res = await fetch(`/api/chat/messages?conversationId=${conversationId}`);
+      const res = await fetch(`/api/chat/messages?conversationId=${conversationId}&viewer=${userRole}`);
       const data = await res.json();
       if (data.messages) {
         setMessages(data.messages);
@@ -415,7 +415,7 @@ export function ChatProvider({
     } finally {
       setLoadingMessages(false);
     }
-  }, []);
+  }, [userRole]);
 
   const fetchConversations = useCallback(
     async (status?: string) => {
@@ -460,7 +460,7 @@ export function ChatProvider({
     if (!isOpen || !activeConversation?._id) return;
     const interval = setInterval(() => {
       if (activeConversation?._id) {
-        fetch(`/api/chat/messages?conversationId=${activeConversation._id}`)
+        fetch(`/api/chat/messages?conversationId=${activeConversation._id}&viewer=${userRole}`)
           .then((res) => res.json())
           .then((data) => {
             if (data.messages && Array.isArray(data.messages)) {
@@ -477,7 +477,7 @@ export function ChatProvider({
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isOpen, activeConversation?._id]);
+  }, [isOpen, activeConversation?._id, userRole]);
 
   const sendMessage = useCallback(
     async (text: string, attachments?: any[]): Promise<ChatMessage | null> => {
@@ -491,6 +491,8 @@ export function ChatProvider({
           body: JSON.stringify({
             conversationId: activeConversation._id,
             message: text.trim(),
+            senderType: userRole,
+            senderName: currentUserName || activeConversation.patientName,
             attachments
           })
         });
@@ -513,7 +515,7 @@ export function ChatProvider({
         throw err;
       }
     },
-    [activeConversation]
+    [activeConversation, userRole, currentUserName]
   );
 
   const sendInitialRequest = useCallback(

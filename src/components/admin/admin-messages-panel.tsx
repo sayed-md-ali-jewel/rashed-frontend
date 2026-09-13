@@ -167,7 +167,7 @@ export function AdminMessagesPanel({
   const loadMessages = useCallback(async (conversationId: string) => {
     try {
       setLoadingMessages(true);
-      const res = await fetch(`/api/chat/messages?conversationId=${conversationId}`);
+      const res = await fetch(`/api/chat/messages?conversationId=${conversationId}&viewer=doctor`);
       const data = await res.json();
       if (data.messages) {
         setMessages(data.messages);
@@ -420,7 +420,9 @@ export function AdminMessagesPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversationId: selectedConv._id,
-          message: text
+          message: text,
+          senderType: "doctor",
+          senderName: selectedConv.doctorName || "Dr. Md. Rashedul Alam"
         })
       });
       const data = await res.json();
